@@ -4,12 +4,13 @@
 
 using namespace geode::prelude;
 
-class $modify(ProfilePage)
+class $modify(RLProfilePage, ProfilePage)
 {
     struct Fields
     {
         CCLabelBMFont *blueprintStarsCount = nullptr;
         CCLabelBMFont *layoutPointsCount = nullptr;
+        int role = 0;
     };
 
     bool init(int accountID, bool ownProfile)
@@ -112,9 +113,9 @@ class $modify(ProfilePage)
     void fetchProfileData(int accountId)
     {
         log::info("Fetching profile data for account ID: {}", accountId);
-        
+
         auto statsMenu = m_mainLayer->getChildByID("stats-menu");
-        
+
         // argon my beloved <3
         std::string token;
         auto res = argon::startAuth([](Result<std::string> res)
@@ -159,14 +160,16 @@ class $modify(ProfilePage)
             }
             
             auto json = jsonRes.unwrap();
-            
             int points = json["points"].asInt().unwrapOrDefault();
             int stars = json["stars"].asInt().unwrapOrDefault();
+            int role = json["role"].asInt().unwrapOrDefault();
             
             log::info("Profile data - points: {}, stars: {}", points, stars);
 
             // store the values into the saved value
             Mod::get()->setSavedValue("stars", stars);
+            Mod::get()->setSavedValue("points", points);
+            m_fields->role = role;
             Mod::get()->setSavedValue("points", points);
             
             // existing stats containers, this is so hacky but wanted to keep it at the right side
@@ -234,14 +237,54 @@ class $modify(ProfilePage)
     // badge
     void loadPageFromUserInfo(GJUserScore *a2)
     {
+        // couldve done a more appropriate way but eh
         ProfilePage::loadPageFromUserInfo(a2);
-
         CCMenu *username_menu = static_cast<CCMenu *>(m_mainLayer->getChildByIDRecursive("username-menu"));
 
-        // your code for create your badge
+        if (m_fields->role != 1)
+            return;
 
-        // yourBadge->setID("mycustombadge-badge")
-        // username_menu->addChild(yourBadge);
+        if (m_fields->role == 1)
+        {
+            auto modbadgeSprite = CCSprite::create("rlBadgeMod.png"_spr);
+            auto modbadgeButton = CCMenuItemSpriteExtra::create(
+                modbadgeSprite,
+                this, menu_selector(RLProfilePage::onBadge));
+
+            modbadgeButton->setID("rlmodBadge-badge");
+            username_menu->addChild(modbadgeButton);
+        }
+        else if (m_fields->role == 2)
+        {
+            auto adminbadgeSprite = CCSprite::create("rlBadgeAdmin.png"_spr);
+            auto adminbadgeButton = CCMenuItemSpriteExtra::create(
+                adminbadgeSprite,
+                this, menu_selector(RLProfilePage::onBadge));
+
+            adminbadgeButton->setID("rladminBadge-badge"_spr);
+            username_menu->addChild(adminbadgeButton);
+        }
+
         username_menu->updateLayout();
+    }
+
+    void onBadge(CCObject *sender)
+    {
+        if (m_fields->role == 1)
+        {
+            FLAlertLayer::create(
+                "Layout Moderator",
+                "This user can suggest layout levels for Rated Layouts to the Layout Admins.",
+                "OK")
+                ->show();
+        }
+        else if (m_fields->role == 2)
+        {
+            FLAlertLayer::create(
+                "Layout Administrator",
+                "This user can rate layout levels for Rated Layouts. They can change the featured ranking on the featured layout levels",
+                "OK")
+                ->show();
+        }
     }
 };

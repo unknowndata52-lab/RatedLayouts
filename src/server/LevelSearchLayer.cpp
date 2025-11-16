@@ -134,7 +134,7 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer)
         m_fields->m_webTask.cancel();
 
         web::WebRequest()
-            .param("type", 0)
+            .param("type", 2)
             .param("amount", 1000)
             .get("https://gdrate.arcticwoof.xyz/getLevels")
             .listen([this](web::WebResponse *res)
@@ -184,7 +184,7 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer)
         m_fields->m_webTask.cancel();
 
         web::WebRequest()
-            .param("type", 2)
+            .param("type", 3)
             .param("amount", 1000)
             .get("https://gdrate.arcticwoof.xyz/getLevels")
             .listen([this](web::WebResponse *res)
