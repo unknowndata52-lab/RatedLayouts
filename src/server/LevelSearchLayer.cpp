@@ -36,7 +36,7 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer)
                 menu_selector(RLLevelSearchLayer::onRatedLevelsButton));
             quickSearchMenu->addChild(ratedTabButton);
 
-            auto allRatedButtonSprite = SearchButton::create("GJ_longBtn04_001.png", "All Rated", 0.5f, "GJ_sFollowedIcon_001.png");
+            auto allRatedButtonSprite = SearchButton::create("GJ_longBtn04_001.png", "New LOs", 0.5f, "GJ_sFollowedIcon_001.png");
             auto allRatedTabButton = CCMenuItemSpriteExtra::create(
                 allRatedButtonSprite,
                 this,
