@@ -22,7 +22,7 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer)
 
         if (quickSearchMenu)
         {
-            auto buttonSprite = SearchButton::create("GJ_longBtn04_001.png", "Send LOs", 0.5f, "GJ_sFollowedIcon_001.png");
+            auto buttonSprite = SearchButton::create("GJ_longBtn04_001.png", "Sent LOs", 0.5f, "GJ_sFollowedIcon_001.png");
             auto tabButton = CCMenuItemSpriteExtra::create(
                 buttonSprite,
                 this,
