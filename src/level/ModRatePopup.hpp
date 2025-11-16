@@ -12,6 +12,7 @@ public:
 
 private:
     std::string m_title;
+    GJGameLevel* m_level;
     GJDifficultySprite* m_difficultySprite;
     bool m_isDemonMode;
     bool m_isFeatured;
@@ -21,8 +22,10 @@ private:
     geode::TextInput* m_featuredScoreInput;
     int m_selectedRating;
     int m_levelId;
+    int m_accountId;
     bool setup(std::string title, GJGameLevel* level) override;
     void onSubmitButton(CCObject* sender);
+    void onUnrateButton(CCObject* sender);
     void onToggleFeatured(CCObject* sender);
     void onToggleDemon(CCObject* sender);
     void onRatingButton(CCObject* sender);

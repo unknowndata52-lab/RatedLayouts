@@ -3,16 +3,19 @@
 bool ModRatePopup::setup(std::string title, GJGameLevel *level)
 {
     m_title = title;
+    m_level = level;
     m_difficultySprite = nullptr;
     m_isDemonMode = false;
     m_isFeatured = false;
     m_selectedRating = -1;
     m_levelId = -1;
+    m_accountId = 0;
 
     // get the level ID ya
     if (level)
     {
         m_levelId = level->m_levelID;
+        m_accountId = level->m_accountID;
     }
 
     // title
@@ -34,7 +37,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel *level)
     float startX = 50.f;
     float buttonSpacing = 55.f;
     float firstRowY = 110.f;
-    
+
     // normal difficulty buttons (1-9)
     for (int i = 1; i <= 9; i++)
     {
@@ -62,10 +65,10 @@ bool ModRatePopup::setup(std::string title, GJGameLevel *level)
         ratingButtonItem->setID("rating-button-" + std::to_string(i));
         m_normalButtonsContainer->addChild(ratingButtonItem);
     }
-    
+
     // demon difficulty buttons (10, 15, 20, 25, 30)
     std::vector<int> demonRatings = {10, 15, 20, 25, 30};
-    
+
     for (int idx = 0; idx < demonRatings.size(); idx++)
     {
         int rating = demonRatings[idx];
@@ -105,14 +108,30 @@ bool ModRatePopup::setup(std::string title, GJGameLevel *level)
     menuButtons->addChild(demonToggle);
 
     // submit button
+    int userRole = Mod::get()->getSavedValue<int>("role", 0);
+    float submitButtonX = (userRole == 2) ? m_mainLayer->getContentSize().width / 2 - 65 : m_mainLayer->getContentSize().width / 2;
+    
     auto submitButtonSpr = ButtonSprite::create("Submit", 1.f);
     auto submitButtonItem = CCMenuItemSpriteExtra::create(
         submitButtonSpr,
         this,
         menu_selector(ModRatePopup::onSubmitButton));
 
-    submitButtonItem->setPosition({m_mainLayer->getContentSize().width / 2, 0});
+    submitButtonItem->setPosition({submitButtonX, 0});
     menuButtons->addChild(submitButtonItem);
+
+    // unrate button (only for admins)
+    if (userRole == 2)
+    {
+        auto unreateSpr = ButtonSprite::create("Unrate", 1.f);
+        auto unrateButtonItem = CCMenuItemSpriteExtra::create(
+            unreateSpr,
+            this,
+            menu_selector(ModRatePopup::onUnrateButton));
+
+        unrateButtonItem->setPosition({m_mainLayer->getContentSize().width / 2 + 65, 0});
+        menuButtons->addChild(unrateButtonItem);
+    }
 
     // toggle between featured or stars only
     auto offSprite = CCSpriteGrayscale::create("rlfeaturedCoin.png"_spr);
@@ -139,7 +158,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel *level)
 
     // featured score textbox (created conditionally based on role)
     m_featuredScoreInput = geode::TextInput::create(100.f, "Score");
-    m_featuredScoreInput->setPosition({300.f, 30.f});
+    m_featuredScoreInput->setPosition({300.f, 40.f});
     m_featuredScoreInput->setVisible(false);
     m_featuredScoreInput->setID("featured-score-input");
     m_mainLayer->addChild(m_featuredScoreInput);
@@ -168,9 +187,10 @@ void ModRatePopup::onSubmitButton(CCObject *sender)
     jsonBody["accountId"] = accountId;
     jsonBody["argonToken"] = token;
     jsonBody["levelId"] = m_levelId;
+    jsonBody["levelOwnerId"] = m_accountId;
     jsonBody["difficulty"] = m_selectedRating;
     jsonBody["featured"] = m_isFeatured ? 1 : 0;
-    
+
     // add featured score if featured mode is enabled
     if (m_isFeatured && m_featuredScoreInput)
     {
@@ -224,6 +244,69 @@ void ModRatePopup::onSubmitButton(CCObject *sender)
         } });
 }
 
+void ModRatePopup::onUnrateButton(CCObject *sender)
+{
+    log::info("Unrate button clicked");
+
+    // Get argon token
+    auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+    if (token.empty())
+    {
+        log::error("Failed to get user token");
+        Notification::create("Authentication token not found", NotificationIcon::Error)->show();
+        return;
+    }
+    // account ID
+    auto accountId = GJAccountManager::get()->m_accountID;
+
+    // matjson payload
+    matjson::Value jsonBody = matjson::Value::object();
+    jsonBody["accountId"] = accountId;
+    jsonBody["argonToken"] = token;
+    jsonBody["levelId"] = m_levelId;
+
+    log::info("Sending unrate request: {}", jsonBody.dump());
+
+    // Make HTTP request using geode's web request
+    auto postReq = web::WebRequest();
+    postReq.bodyJSON(jsonBody);
+    auto postTask = postReq.post("https://gdrate.arcticwoof.xyz/unrate");
+
+    postTask.listen([this](web::WebResponse *response)
+                    {
+        log::info("Received response from server");
+        
+        if (!response->ok())
+        {
+            log::warn("Server returned non-ok status: {}", response->code());
+            Notification::create("Failed to unrate layout", NotificationIcon::Error)->show();
+            return;
+        }
+        
+        auto jsonRes = response->json();
+        if (!jsonRes)
+        {
+            log::warn("Failed to parse JSON response");
+            Notification::create("Invalid server response", NotificationIcon::Error)->show();
+            return;
+        }
+        
+        auto json = jsonRes.unwrap();
+        bool success = json["success"].asBool().unwrapOrDefault();
+        
+        if (success)
+        {
+            log::info("Unrate submission successful!");
+            Notification::create("Layout unrated successfully!",NotificationIcon::Success)->show();
+            this->onClose(nullptr);
+        }
+        else
+        {
+            log::warn("Unrate submission failed: success is false");
+            Notification::create("Failed to unrate layout", NotificationIcon::Error)->show();
+        } });
+}
+
 void ModRatePopup::onToggleFeatured(CCObject *sender)
 {
     // Check if user has admin role
@@ -238,14 +321,18 @@ void ModRatePopup::onToggleFeatured(CCObject *sender)
         existingCoin->removeFromParent(); // could do setVisible false but whatever
     }
 
-    if (m_isFeatured && userRole == 2)
+    if (m_isFeatured)
     {
         auto featuredCoin = CCSprite::create("rlfeaturedCoin.png"_spr);
         featuredCoin->setPosition({0, 0});
         featuredCoin->setScale(1.2f);
         featuredCoin->setID("featured-coin");
         m_difficultyContainer->addChild(featuredCoin, -1);
-        m_featuredScoreInput->setVisible(true);
+        // score only for admin
+        if (userRole == 2)
+        {
+            m_featuredScoreInput->setVisible(true);
+        }
     }
     else
     {
@@ -270,7 +357,7 @@ void ModRatePopup::onRatingButton(CCObject *sender)
     // reset the bg of the previously selected button
     if (m_selectedRating != -1)
     {
-        CCMenu* prevContainer = (m_selectedRating <= 9) ? m_normalButtonsContainer : m_demonButtonsContainer;
+        CCMenu *prevContainer = (m_selectedRating <= 9) ? m_normalButtonsContainer : m_demonButtonsContainer;
         auto prevButton = prevContainer->getChildByID("rating-button-" + std::to_string(m_selectedRating));
         if (prevButton)
         {
