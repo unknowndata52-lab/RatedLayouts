@@ -7,13 +7,18 @@ using namespace geode::prelude;
 
 class $modify(RLLevelInfoLayer, LevelInfoLayer)
 {
+    struct Fields
+    {
+        bool m_difficultyOffsetApplied = false; // this is ass. very trash, hacky way to fix this refresh bug
+    };
+
     bool init(GJGameLevel *level, bool challenge)
     {
         if (!LevelInfoLayer::init(level, challenge))
             return false;
 
-            // probs update the value of the stars the user has saved
-            int savedStars = Mod::get()->getSavedValue<int>("stars");
+        // probs update the value of the stars the user has saved
+        int savedStars = Mod::get()->getSavedValue<int>("stars");
 
         int starRatings = level->m_stars;
         bool legitCompleted = level->m_isCompletionLegitimate;
@@ -80,17 +85,30 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer)
 
         leftMenu->updateLayout();
 
-        // fetch rating data
+        // If the level is already downloaded
+        if (this->m_level && !this->m_level->m_levelString.empty())
+        {
+            this->levelDownloadFinished(this->m_level);
+        }
+
+        return true;
+    };
+
+    void levelDownloadFinished(GJGameLevel *level)
+    {
+        LevelInfoLayer::levelDownloadFinished(level);
+
+        log::info("Level download finished, fetching rating data...");
+
+        // Fetch rating data from server
         int levelId = this->m_level->m_levelID;
         log::info("Fetching rating data for level ID: {}", levelId);
 
-        if (this->getChildByID("stars-icon") != nullptr)
-        {
-            auto getReq = web::WebRequest();
-            auto getTask = getReq.get(fmt::format("https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId));
+        auto getReq = web::WebRequest();
+        auto getTask = getReq.get(fmt::format("https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId));
 
-            getTask.listen([this](web::WebResponse *response)
-                           {
+        getTask.listen([this](web::WebResponse *response)
+                       {
             log::info("Received rating response from server");
             
             if (!response->ok())
@@ -112,7 +130,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer)
             
             log::info("difficulty: {}, featured: {}", difficulty, featured);
             
-            // Map difficulty
+            // Map difficulty to difficultyLevel
             int difficultyLevel = 0;
             bool isDemon = false;
             switch (difficulty)
@@ -170,33 +188,57 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer)
                 auto sprite = static_cast<GJDifficultySprite*>(difficultySprite);
                 sprite->updateDifficultyFrame(difficultyLevel, GJDifficultyName::Long);
 
-                // star icon
-                auto newStarIcon = CCSprite::create("rlStarIcon.png"_spr);
-                newStarIcon->setPosition({difficultySprite->getContentSize().width / 2 + 5, -7});
-                newStarIcon->setScale(0.53f); // im trying to be exact here alright
-                newStarIcon->setID("rl-star-icon");
-                difficultySprite->addChild(newStarIcon);
+                auto existingStarIcon = difficultySprite->getChildByID("rl-star-icon");
+                CCSprite *starIcon = nullptr;
+                bool isFirstTime = !existingStarIcon;
 
-                // star value label
-                auto starLabelValue = CCLabelBMFont::create(numToString(difficulty).c_str(), "bigFont.fnt");
-                starLabelValue->setPosition({newStarIcon->getPositionX() - 7, newStarIcon->getPositionY()});
-                starLabelValue->setScale(0.4f);
-                starLabelValue->setAnchorPoint({1.0f, 0.5f});
-                starLabelValue->setAlignment(kCCTextAlignmentRight);
-                starLabelValue->setID("rl-star-label");
+                if (!existingStarIcon)
+                {
+                    // star icon
+                    starIcon = CCSprite::create("rlStarIcon.png"_spr);
+                    starIcon->setPosition({difficultySprite->getContentSize().width / 2 + 5, -7});
+                    starIcon->setScale(0.53f);
+                    starIcon->setID("rl-star-icon");
+                    difficultySprite->addChild(starIcon);
+                }
+                else
+                {
+                    starIcon = static_cast<CCSprite*>(existingStarIcon);
+                }
+
+                // star value label (update or create)
+                auto existingLabel = difficultySprite->getChildByID("rl-star-label");
+                auto starLabelValue = existingLabel ? static_cast<CCLabelBMFont*>(existingLabel) : CCLabelBMFont::create(numToString(difficulty).c_str(), "bigFont.fnt");
+                
+                if (existingLabel)
+                {
+                    starLabelValue->setString(numToString(difficulty).c_str());
+                }
+                else
+                {
+                    starLabelValue->setID("rl-star-label");
+                    starLabelValue->setPosition({starIcon->getPositionX() - 7, starIcon->getPositionY()});
+                    starLabelValue->setScale(0.4f);
+                    starLabelValue->setAnchorPoint({1.0f, 0.5f});
+                    starLabelValue->setAlignment(kCCTextAlignmentRight);
+                    difficultySprite->addChild(starLabelValue);
+                }
 
                 if (GameStatsManager::sharedState()->hasCompletedOnlineLevel(this->m_level->m_levelID))
                 {
                     starLabelValue->setColor({ 0, 150, 255 }); // cyan
                 }
-                difficultySprite->addChild(starLabelValue);
 
-                if (isDemon)
+                if (!m_fields->m_difficultyOffsetApplied)
                 {
-                    sprite->setPositionY(sprite->getPositionY() + 20); // wth is the demon offset cuz of the long text thing
-                } else
-                {
-                    sprite->setPositionY(sprite->getPositionY() + 10);
+                    if (isDemon)
+                    {
+                        sprite->setPositionY(sprite->getPositionY() + 20);
+                    } else
+                    {
+                        sprite->setPositionY(sprite->getPositionY() + 10);
+                    }
+                    m_fields->m_difficultyOffsetApplied = true;
                 }
             }
             
@@ -222,179 +264,69 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer)
                     }
                 }
             } });
-        }
+    }
 
-        return true;
-    };
-
+    // this shouldnt exist but it must be done to fix that positions
     void levelUpdateFinished(GJGameLevel *level, UpdateResponse response)
     {
         LevelInfoLayer::levelUpdateFinished(level, response);
 
-        int starRatings = level->m_stars;
-        if (starRatings)
+        auto difficultySprite = this->getChildByID("difficulty-sprite");
+        if (difficultySprite && m_fields->m_difficultyOffsetApplied)
         {
-            return;
-        }
-        // Fetch rating data from server
-        int levelId = this->m_level->m_levelID;
-        log::info("Fetching rating data for level ID on update: {}", levelId);
+            auto sprite = static_cast<GJDifficultySprite *>(difficultySprite);
 
-        auto getReq = web::WebRequest();
-        auto getTask = getReq.get(fmt::format("https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId));
+            int starRatings = this->m_level->m_stars;
+            bool isPlatformer = this->m_level->isPlatformer();
 
-        getTask.listen([this](web::WebResponse *response)
-                       {
-            log::info("Received rating response from server on level update");
-            
-            if (!response->ok())
-            {
-                log::warn("Server returned non-ok status: {}", response->code());
-                return;
-            }
-            
-            auto jsonRes = response->json();
-            if (!jsonRes)
-            {
-                log::warn("Failed to parse JSON response");
-                return;
-            }
-            
-            auto json = jsonRes.unwrap();
-            int difficulty = json["difficulty"].asInt().unwrapOrDefault();
-            int featured = json["featured"].asInt().unwrapOrDefault();
-            
-            log::info("Rating data - difficulty: {}, featured: {}", difficulty, featured);
-            
-            // Map difficulty to difficultyLevel
-            int difficultyLevel = 0;
-            bool isDemon = false;
-            switch (difficulty)
-            {
-            case 1:
-                difficultyLevel = -1;
-                break;
-            case 2:
-                difficultyLevel = 1;
-                break;
-            case 3:
-                difficultyLevel = 2;
-                break;
-            case 4:
-            case 5:
-                difficultyLevel = 3;
-                break;
-            case 6:
-            case 7:
-                difficultyLevel = 4;
-                break;
-            case 8:
-            case 9:
-                difficultyLevel = 5;
-                break;
-            case 10:
-                difficultyLevel = 7;
-                isDemon = true;
-                break;
-            case 15:
-                difficultyLevel = 8;
-                isDemon = true;
-                break;
-            case 20:
-                difficultyLevel = 6;
-                isDemon = true;
-                break;
-            case 25:
-                difficultyLevel = 9;
-                isDemon = true;
-                break;
-            case 30:
-                difficultyLevel = 10;
-                isDemon = true;
-                break;
-            default:
-                difficultyLevel = 0;
-                break;
-            }
-            
-            // update difficulty
-            auto difficultySprite = this->getChildByID("difficulty-sprite");
-            if (difficultySprite)
-            {
-                auto sprite = static_cast<GJDifficultySprite*>(difficultySprite);
-                sprite->updateDifficultyFrame(difficultyLevel, GJDifficultyName::Long);
+            int levelId = this->m_level->m_levelID;
+            auto getReq = web::WebRequest();
+            auto getTask = getReq.get(fmt::format("https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId));
 
-                if (isDemon)
+            getTask.listen([this](web::WebResponse *response)
+                           {
+                if (!response->ok() || !response->json())
                 {
-                    sprite->setPositionY(sprite->getPositionY() + 20);
-                } else
-                {
-                    sprite->setPositionY(sprite->getPositionY() + 10);
+                    return;
                 }
-
-                                // update stars
-                auto starIcon = difficultySprite->getChildByID("rl-star-icon");
-                auto starLabel = difficultySprite->getChildByID("rl-star-label");
-
-                if (!starIcon)
+                
+                auto json = response->json().unwrap();
+                int difficulty = json["difficulty"].asInt().unwrapOrDefault();
+                
+                auto difficultySprite = this->getChildByID("difficulty-sprite");
+                if (difficultySprite)
                 {
-                    starIcon = CCSprite::create("rlStarIcon.png"_spr);
-                    starIcon->setPosition({difficultySprite->getContentSize().width / 2 + 5, -7});
-                    starIcon->setScale(0.53f);
-                    starIcon->setID("rl-star-icon");
-                    difficultySprite->addChild(starIcon);
-                }
-                else
-                {
-                    starIcon->setPositionX(difficultySprite->getContentSize().width / 2 + 5);
-                }
-
-                if (!starLabel)
-                {
-                    starLabel = CCLabelBMFont::create(numToString(difficulty).c_str(), "bigFont.fnt");
-                    starLabel->setID("rl-star-label");
-                    difficultySprite->addChild(starLabel);
-                }
-
-                if (starLabel)
-                {
-                    auto starLabelFont = static_cast<CCLabelBMFont*>(starLabel);
-                    starLabelFont->setString(numToString(difficulty).c_str());
-                    starLabel->setPosition({starIcon->getPositionX() - 7, starIcon->getPositionY()});
-                    starLabel->setScale(0.4f);
-                    starLabel->setAnchorPoint({1.0f, 0.5f});
+                    auto sprite = static_cast<GJDifficultySprite*>(difficultySprite);
                     
-                    // did u beat this legit? lol
-                    if (GameStatsManager::sharedState()->hasCompletedOnlineLevel(this->m_level->m_levelID))
+                    bool isDemon = false;
+                    switch (difficulty)
                     {
-                        starLabelFont->setColor({0, 150, 255}); // cyan
+                    case 10:
+                    case 15:
+                    case 20:
+                    case 25:
+                    case 30:
+                        isDemon = true;
+                        break;
                     }
-                }
-            }
-            
-            // Update featured coin visibility
-            if (difficultySprite)
-            {
-                auto featuredCoin = difficultySprite->getChildByID("featured-coin");
-                if (featured == 1)
-                {
-                    if (!featuredCoin)
+                    
+                    float offsetY = isDemon ? 20.0f : 10.0f;
+                    sprite->setPositionY(sprite->getPositionY() + offsetY);
+                    
+                    auto starIcon = sprite->getChildByID("rl-star-icon");
+                    auto starLabel = sprite->getChildByID("rl-star-label");
+                    
+                    if (starIcon)
                     {
-                        auto newFeaturedCoin = CCSprite::create("rlfeaturedCoin.png"_spr);
-                        newFeaturedCoin->setPosition({0, 0});
-                        newFeaturedCoin->setScale(1.1f);
-                        newFeaturedCoin->setID("featured-coin");
-                        difficultySprite->addChild(newFeaturedCoin, -1);
+                        starIcon->setPosition({difficultySprite->getContentSize().width / 2 + 5, -7});
                     }
-                }
-                else if (featured == 0)
-                {
-                    if (featuredCoin)
+                    
+                    if (starLabel)
                     {
-                        featuredCoin->removeFromParent();
+                        starLabel->setPosition({starIcon->getPositionX() - 7, starIcon->getPositionY()});
                     }
-                }
-            } });
+                } });
+        }
     }
 
     void onModButton(CCObject *sender)
