@@ -241,50 +241,45 @@ class $modify(RLProfilePage, ProfilePage)
         ProfilePage::loadPageFromUserInfo(a2);
         CCMenu *username_menu = static_cast<CCMenu *>(m_mainLayer->getChildByIDRecursive("username-menu"));
 
-        if (m_fields->role != 1)
-            return;
-
         if (m_fields->role == 1)
         {
-            auto modbadgeSprite = CCSprite::create("rlBadgeMod.png"_spr);
-            auto modbadgeButton = CCMenuItemSpriteExtra::create(
-                modbadgeSprite,
-                this, menu_selector(RLProfilePage::onBadge));
+            auto modBadgeSprite = CCSprite::create("rlBadgeMod.png"_spr);
+            auto modBadgeButton = CCMenuItemSpriteExtra::create(
+                modBadgeSprite,
+                this, menu_selector(RLProfilePage::onModBadge));
 
-            modbadgeButton->setID("rlmodBadge-badge");
-            username_menu->addChild(modbadgeButton);
+            modBadgeButton->setID("rl-mod-badge");
+            username_menu->addChild(modBadgeButton);
         }
         else if (m_fields->role == 2)
         {
-            auto adminbadgeSprite = CCSprite::create("rlBadgeAdmin.png"_spr);
-            auto adminbadgeButton = CCMenuItemSpriteExtra::create(
-                adminbadgeSprite,
-                this, menu_selector(RLProfilePage::onBadge));
+            auto adminBadgeSprite = CCSprite::create("rlBadgeAdmin.png"_spr);
+            auto adminBadgeButton = CCMenuItemSpriteExtra::create(
+                adminBadgeSprite,
+                this, menu_selector(RLProfilePage::onAdminBadge));
 
-            adminbadgeButton->setID("rladminBadge-badge"_spr);
-            username_menu->addChild(adminbadgeButton);
+            adminBadgeButton->setID("rl-admin-badge");
+            username_menu->addChild(adminBadgeButton);
         }
 
         username_menu->updateLayout();
     }
 
-    void onBadge(CCObject *sender)
+    void onModBadge(CCObject *sender)
     {
-        if (m_fields->role == 1)
-        {
-            FLAlertLayer::create(
-                "Layout Moderator",
-                "This user can suggest layout levels for Rated Layouts to the Layout Admins.",
-                "OK")
-                ->show();
-        }
-        else if (m_fields->role == 2)
-        {
-            FLAlertLayer::create(
-                "Layout Administrator",
-                "This user can rate layout levels for Rated Layouts. They can change the featured ranking on the featured layout levels",
-                "OK")
-                ->show();
-        }
+        FLAlertLayer::create(
+            "Layout Moderator",
+            "This user can suggest layout levels for Rated Layouts to the Layout Admins.",
+            "OK")
+            ->show();
+    }
+
+    void onAdminBadge(CCObject *sender)
+    {
+        FLAlertLayer::create(
+            "Layout Administrator",
+            "This user can rate layout levels for Rated Layouts. They can change the featured ranking on the featured layout levels.",
+            "OK")
+            ->show();
     }
 };
