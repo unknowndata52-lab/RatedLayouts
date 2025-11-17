@@ -77,11 +77,11 @@ class $modify(EndLevelLayer)
             auto json = jsonRes.unwrap();
             int difficulty = json["difficulty"].asInt().unwrapOrDefault();
 
-            log::info("Difficulty value: {}", difficulty);
+            log::debug("Difficulty value: {}", difficulty);
 
             // Reward stars based on difficulty value
             int starReward = std::max(0, difficulty);
-            log::info("Star reward amount: {}", starReward);
+            log::debug("Star reward amount: {}", starReward);
 
             int accountId = GJAccountManager::get()->m_accountID;
             std::string argonToken = Mod::get()->getSavedValue<std::string>("argon_token");

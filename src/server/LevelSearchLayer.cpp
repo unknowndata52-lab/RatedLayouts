@@ -24,14 +24,7 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer)
 
         if (quickSearchMenu)
         {
-            auto buttonSprite = SearchButton::create("GJ_longBtn04_001.png", "Sent LOs", 0.5f, "GJ_sFollowedIcon_001.png");
-            auto tabButton = CCMenuItemSpriteExtra::create(
-                buttonSprite,
-                this,
-                menu_selector(RLLevelSearchLayer::onSuggestedLevelsButton));
-            quickSearchMenu->addChild(tabButton);
-
-            auto ratedButtonSprite = SearchButton::create("GJ_longBtn04_001.png", "Rated LOs", 0.5f, "GJ_sFollowedIcon_001.png");
+            auto ratedButtonSprite = SearchButton::create("GJ_longBtn04_001.png", "Feat. LOs", 0.5f, "GJ_sFollowedIcon_001.png");
             auto ratedTabButton = CCMenuItemSpriteExtra::create(
                 ratedButtonSprite,
                 this,
@@ -44,6 +37,15 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer)
                 this,
                 menu_selector(RLLevelSearchLayer::onAllRatedLevelsButton));
             quickSearchMenu->addChild(allRatedTabButton);
+
+            auto buttonSprite = SearchButton::create("GJ_longBtn04_001.png", "Sent LOs", 0.5f, "GJ_sFollowedIcon_001.png");
+            auto tabButton = CCMenuItemSpriteExtra::create(
+                buttonSprite,
+                this,
+                menu_selector(RLLevelSearchLayer::onSuggestedLevelsButton));
+            quickSearchMenu->addChild(tabButton);
+
+
 
             // check if layouts from other mods exists
             RowLayout *layout = nullptr;

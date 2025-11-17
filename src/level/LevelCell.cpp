@@ -8,7 +8,7 @@ class $modify(LevelCell)
     void loadCustomLevelCell(int levelId)
     {
         // Fetch rating data from server and update difficulty sprite
-        log::info("Fetching rating data for level cell ID: {}", levelId);
+        log::debug("Fetching rating data for level cell ID: {}", levelId);
 
         auto getReq = web::WebRequest();
         auto getTask = getReq.get(fmt::format("https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId));
@@ -18,7 +18,7 @@ class $modify(LevelCell)
 
         getTask.listen([cellRef, levelId](web::WebResponse *response)
                        {
-            log::info("Received rating response from server for level cell ID: {}", levelId);
+            log::debug("Received rating response from server for level cell ID: {}", levelId);
 
             // Validate that the cell still exists
             if (!cellRef || !cellRef->m_mainLayer)
@@ -44,7 +44,7 @@ class $modify(LevelCell)
             int difficulty = json["difficulty"].asInt().unwrapOrDefault();
             int featured = json["featured"].asInt().unwrapOrDefault();
 
-            log::info("difficulty: {}, featured: {}", difficulty, featured);
+            log::debug("difficulty: {}, featured: {}", difficulty, featured);
 
             // Map difficulty
             int difficultyLevel = 0;

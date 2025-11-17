@@ -17,9 +17,6 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer)
         if (!LevelInfoLayer::init(level, challenge))
             return false;
 
-        // probs update the value of the stars the user has saved
-        int savedStars = Mod::get()->getSavedValue<int>("stars");
-
         int starRatings = level->m_stars;
         bool legitCompleted = level->m_isCompletionLegitimate;
         auto leftMenu = this->getChildByID("left-side-menu");

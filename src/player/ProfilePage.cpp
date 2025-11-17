@@ -167,10 +167,7 @@ class $modify(RLProfilePage, ProfilePage)
             log::info("Profile data - points: {}, stars: {}", points, stars);
 
             // store the values into the saved value
-            Mod::get()->setSavedValue("stars", stars);
-            Mod::get()->setSavedValue("points", points);
             m_fields->role = role;
-            Mod::get()->setSavedValue("points", points);
             
             // existing stats containers, this is so hacky but wanted to keep it at the right side
             auto blueprintStarsContainer = statsMenu->getChildByID("blueprint-stars-container");
@@ -233,8 +230,6 @@ class $modify(RLProfilePage, ProfilePage)
             
             // only set saved data if you own the profile
             if (m_ownProfile) {
-            Mod::get()->setSavedValue("stars", stars);
-            Mod::get()->setSavedValue("points", points);
             Mod::get()->setSavedValue("role", m_fields->role);
             }
             

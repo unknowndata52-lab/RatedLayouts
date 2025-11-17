@@ -6,7 +6,7 @@ This mod intergretes seemlessly with the current rating system and improved <cr>
 
 <co>You can find the list of Rated Layouts at the Quick Search Menu on the Search Tab. (Next Page)</c>
 
-## Feature
+## Features
 
 - **Layout Rating System**: Rates levels based on layout design, and fun gameplay. It doesn't focus on the decoration and more on the actual gameplay of the level!
 - **Seamless Integration**: Works alongside the existing rating system, this won't replace the current rating system but rather provide an alternative.
