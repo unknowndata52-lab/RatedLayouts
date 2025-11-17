@@ -29,6 +29,12 @@ class $modify(RLCommentCell, CommentCell)
         {
             return;
         }
+        // heres some hot fixes
+        if (!m_mainLayer)
+        {
+            log::warn("main layer is null, cannot apply color");
+            return;
+        }
 
         ccColor3B color;
         if (m_fields->role == 1)
