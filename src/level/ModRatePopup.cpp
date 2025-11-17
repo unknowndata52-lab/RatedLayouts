@@ -110,7 +110,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel *level)
     // submit button
     int userRole = Mod::get()->getSavedValue<int>("role", 0);
     float submitButtonX = (userRole == 2) ? m_mainLayer->getContentSize().width / 2 - 65 : m_mainLayer->getContentSize().width / 2;
-    
+
     auto submitButtonSpr = ButtonSprite::create("Submit", 1.f);
     auto submitButtonItem = CCMenuItemSpriteExtra::create(
         submitButtonSpr,
@@ -233,13 +233,13 @@ void ModRatePopup::onSubmitButton(CCObject *sender)
         if (success)
         {
             log::info("Rate submission successful!");
-            Notification::create("Layout rated successfully!",NotificationIcon::Success)->show();
+            Notification::create("Level submitted successfully!",NotificationIcon::Success)->show();
             this->onClose(nullptr);
         }
         else
         {
             log::warn("Rate submission failed: success is false");
-            Notification::create("Failed to rate layout", NotificationIcon::Error)->show();
+            Notification::create("Failed to submit level", NotificationIcon::Error)->show();
         } });
 }
 
