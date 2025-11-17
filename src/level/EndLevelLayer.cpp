@@ -124,7 +124,7 @@ class $modify(EndLevelLayer)
 
                 log::info("submitComplete success: {}, response stars: {}", success, responseStars);
 
-                if (success) // ps. people can still cheat stars by exiting without saving (or crashing before actually completing the level)
+                if (success)
                 {
                     // response stars minus the difficulty reward
                     int displayStars = responseStars - starReward;
