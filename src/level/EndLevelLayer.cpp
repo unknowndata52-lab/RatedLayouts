@@ -19,11 +19,21 @@ class $modify(EndLevelLayer)
         }
 
 
+
         // i couldve done a better way to do this but this works for now
         std::string completedKey = fmt::format("{}", level->m_levelID);
         if (Mod::get()->getSavedValue<bool>(completedKey, false))
         {
             log::info("Level ID: {} was already completed before", level->m_levelID);
+            return;
+        }
+
+        // this is so only when you actually completed the level and detects that you did
+        // then give those yum yum stars, otherwise u use safe mod to do crap lmaoooo
+        if (level->m_normalPercent >= 100) {
+            log::info("Level ID: {} completed for the first time!", level->m_levelID);
+        } else {
+            log::info("Level ID: {} not completed, skipping reward", level->m_levelID);
             return;
         }
 

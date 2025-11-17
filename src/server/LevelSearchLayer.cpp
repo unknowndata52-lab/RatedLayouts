@@ -1,6 +1,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/LevelSearchLayer.hpp>
 #include <Geode/modify/LevelBrowserLayer.hpp>
+#include <alphalaneous.pages_api/include/PageMenu.h>
 
 using namespace geode::prelude;
 
@@ -19,6 +20,7 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer)
         }
 
         auto quickSearchMenu = this->getChildByID("quick-search-menu");
+        auto winSize = CCDirector::sharedDirector()->getWinSize();
 
         if (quickSearchMenu)
         {
@@ -42,6 +44,25 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer)
                 this,
                 menu_selector(RLLevelSearchLayer::onAllRatedLevelsButton));
             quickSearchMenu->addChild(allRatedTabButton);
+
+            // check if layouts from other mods exists
+            RowLayout *layout = nullptr;
+            if (!layout)
+            {
+                layout = RowLayout::create();
+                layout->setGrowCrossAxis(true);
+                layout->setCrossAxisOverflow(false);
+                layout->setAxisAlignment(AxisAlignment::Center);
+                layout->setCrossAxisAlignment(AxisAlignment::Center);
+                layout->ignoreInvisibleChildren(true);
+
+                quickSearchMenu->setContentSize({365, 116});
+                quickSearchMenu->ignoreAnchorPointForPosition(false);
+                quickSearchMenu->setPosition({quickSearchMenu->getPosition().x, winSize.height / 2 + 28});
+                quickSearchMenu->setLayout(layout);
+
+                static_cast<PageMenu *>(quickSearchMenu)->setPaged(9, PageOrientation::HORIZONTAL, 422);
+            }
 
             // hacky way to use custom icons (inspired by random tab snippet lol)
             auto oldSprite = typeinfo_cast<CCSprite *>(buttonSprite->getChildren()->objectAtIndex(1));
@@ -75,6 +96,21 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer)
             quickSearchMenu->updateLayout();
         }
         return true;
+    }
+
+    void onEnterTransitionDidFinish() override
+    {
+        if (!Mod::get()->getSavedValue<bool>("isFirstTime"))
+        {
+            FLAlertLayer::create(
+                "Where to find Rated Layouts?",
+                "Rated Layouts introduced a <cy>new rating system</c> for <cb>layout levels</c>! You can find these layout levels at the <cl>Quick Menu</c> on the next page! ",
+                "OK")
+                ->show();
+            // hello for the first time, so that way people stop complaining about where the new layout levels are >:)
+            Mod::get()->setSavedValue<bool>("isFirstTime", true);
+        }
+        LevelSearchLayer::onEnterTransitionDidFinish();
     }
 
     // these were absolute trash to do, legit had to go find snippets from other repos

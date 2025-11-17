@@ -22,6 +22,10 @@
 		"capeling.garage-stats-menu": {
 			"importance": "required",
 			"version": ">=1.0.1"
+		},
+		"alphalaneous.pages_api": {
+			"importance": "required",
+			"version": ">=1.4.1"
 		}
 	},
 	"links": {

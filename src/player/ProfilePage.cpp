@@ -231,38 +231,66 @@ class $modify(RLProfilePage, ProfilePage)
             
             statsMenu->updateLayout();
             
+            // only set saved data if you own the profile
+            if (m_ownProfile) {
             Mod::get()->setSavedValue("stars", stars);
-            Mod::get()->setSavedValue("points", points); });
+            Mod::get()->setSavedValue("points", points);
+            Mod::get()->setSavedValue("role", m_fields->role);
+            }
+            
+            this->loadBadgeFromUserInfo(); });
     }
     // badge
     void loadPageFromUserInfo(GJUserScore *a2)
     {
-        // couldve done a more appropriate way but eh
         ProfilePage::loadPageFromUserInfo(a2);
-        CCMenu *username_menu = static_cast<CCMenu *>(m_mainLayer->getChildByIDRecursive("username-menu"));
+    }
+
+    void loadBadgeFromUserInfo()
+    {
+        auto userNameMenu = typeinfo_cast<CCMenu *>(m_mainLayer->getChildByIDRecursive("username-menu"));
+        if (!userNameMenu)
+        {
+            log::warn("username-menu not found");
+            return;
+        }
 
         if (m_fields->role == 1)
         {
+            if (userNameMenu->getChildByID("rl-mod-badge"))
+            {
+                return;
+            }
+
             auto modBadgeSprite = CCSprite::create("rlBadgeMod.png"_spr);
             auto modBadgeButton = CCMenuItemSpriteExtra::create(
                 modBadgeSprite,
-                this, menu_selector(RLProfilePage::onModBadge));
+                this,
+                menu_selector(RLProfilePage::onModBadge));
 
             modBadgeButton->setID("rl-mod-badge");
-            username_menu->addChild(modBadgeButton);
+            userNameMenu->addChild(modBadgeButton);
+            userNameMenu->updateLayout();
         }
         else if (m_fields->role == 2)
         {
+            // Check if badge already exists
+            if (userNameMenu->getChildByID("rl-admin-badge"))
+            {
+                log::info("Admin badge already exists, skipping creation");
+                return;
+            }
+
             auto adminBadgeSprite = CCSprite::create("rlBadgeAdmin.png"_spr);
             auto adminBadgeButton = CCMenuItemSpriteExtra::create(
                 adminBadgeSprite,
-                this, menu_selector(RLProfilePage::onAdminBadge));
+                this,
+                menu_selector(RLProfilePage::onAdminBadge));
 
             adminBadgeButton->setID("rl-admin-badge");
-            username_menu->addChild(adminBadgeButton);
+            userNameMenu->addChild(adminBadgeButton);
+            userNameMenu->updateLayout();
         }
-
-        username_menu->updateLayout();
     }
 
     void onModBadge(CCObject *sender)

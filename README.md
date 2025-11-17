@@ -2,7 +2,7 @@
 
 An <cl>Alternative Rating System</c> that focus on rating classic layout levels! It adds a new rating type called <cl>Rated Layouts</c> that rates based on the level's layout design and interesting gameplay.
 
-This mod intergretes seemlessly with the current rating system and improved <cr>Demon Ratings</c> by providing a more accurate representation of a level's difficulty. <cr>This does not include Platformers levels to be rated</c>.
+This mod intergretes seemlessly with the current rating system and improved <cr>Demon Ratings</c> by providing a more accurate representation of a level's difficulty. <cr>_This does not include Platformers levels to be rated_</c>.
 
 <co>You can find the list of Rated Layouts at the Quick Search Menu on the Search Tab. (Next Page)</c>
 
@@ -15,10 +15,12 @@ This mod intergretes seemlessly with the current rating system and improved <cr>
 - **Moderator Badges**: Special badges for moderators to identify the layout moderators and admins!
 - **Earn New Blueprint Stars**: Earn blueprint stars by completing rated layout levels!
 - **New Blueprint Creator Points**: Get Blueprint Creator Points whenever you get a rated layout level!
-*... and the best part...*
-- **Admins Rates Layout Levels**: Admins can now rate layout levels directly, similar to how <co>Rob<cl>top</c> rates official levels!
 
-# Up-coming Features
+_... and the best part..._
+
+- **Admins Rates Layout Levels**: Admins can now rate layout levels directly, similar to how <cy>Rob</c><cl>top</c> rates levels but faster lol!
+
+## Up-coming Features
 
 - **Custom Achievements**: Custom Achievements for completing rated layout levels and achieving milestones.
 - **Leaderboard Integration**: Compete with other players on leaderboards for the most Blueprint Stars and Blueprint Creator Points!
