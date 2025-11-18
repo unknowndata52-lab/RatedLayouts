@@ -51,7 +51,7 @@ class $modify(EndLevelLayer)
         // capture EndLevelLayer as Ref
         Ref<EndLevelLayer> endLayerRef = this;
 
-        getTask.listen([endLayerRef, levelId, this](web::WebResponse *response)
+        getTask.listen([endLayerRef, levelId](web::WebResponse *response)
                        {
             log::info("Received rating response for completed level ID: {}", levelId);
 
@@ -95,7 +95,7 @@ class $modify(EndLevelLayer)
             auto submitReq = web::WebRequest();
             submitReq.bodyJSON(jsonBody);
             auto submitTask = submitReq.post("https://gdrate.arcticwoof.xyz/submitComplete");
-            submitTask.listen([endLayerRef, starReward, levelId, this](web::WebResponse *submitResponse)
+            submitTask.listen([endLayerRef, starReward, levelId](web::WebResponse *submitResponse)
             {
                 log::info("Received submitComplete response for level ID: {}", levelId);
 
@@ -131,10 +131,16 @@ class $modify(EndLevelLayer)
                     log::info("Display stars: {} - {} = {}", responseStars, starReward, displayStars);
                     Mod::get()->setSavedValue<int>("stars", responseStars);
 
+                    if (!endLayerRef || !endLayerRef->m_mainLayer)
+                    {
+                        log::warn("m_mainLayer is invalid");
+                        return;
+                    }
+
                     // make the stars reward pop when u complete the level
                     auto bigStarSprite = CCSprite::create("rlStarIconBig.png"_spr);
                     bigStarSprite->setScale(1.2f);
-                    bigStarSprite->setPosition({m_mainLayer->getContentSize().width / 2 + 135, m_mainLayer->getContentSize().height / 2});
+                    bigStarSprite->setPosition({endLayerRef->m_mainLayer->getContentSize().width / 2 + 135, endLayerRef->m_mainLayer->getContentSize().height / 2});
                     bigStarSprite->setOpacity(0);
                     bigStarSprite->setScale(0.5f);
                     endLayerRef->m_mainLayer->addChild(bigStarSprite);
