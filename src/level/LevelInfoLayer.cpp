@@ -1,10 +1,86 @@
 #include <Geode/Geode.hpp>
+#include <Geode/modify/GameLevelManager.hpp>
 #include <Geode/modify/LevelInfoLayer.hpp>
 #include <argon/argon.hpp>
 
 #include "ModRatePopup.hpp"
 
 using namespace geode::prelude;
+
+// helper functions all about caching level rating data
+// get the cache file path
+static std::string getCachePath() {
+      auto saveDir = dirs::getModsSaveDir();
+      return (saveDir / "level_ratings_cache.json").string();  // stored outside the save dir, idk why
+}
+
+// load cached data for a level
+static std::optional<matjson::Value> getCachedLevel(int levelId) {
+      auto cachePath = getCachePath();
+      auto data = utils::file::readString(cachePath);
+      if (!data) return std::nullopt;
+
+      auto json = matjson::parse(data.unwrap());
+      if (!json) return std::nullopt;
+
+      auto root = json.unwrap();
+      if (root.isObject() && root.contains(fmt::format("{}", levelId))) {
+            return root[fmt::format("{}", levelId)];
+      }
+
+      return std::nullopt;
+}
+
+// delete level from cache
+static void deleteLevelFromCache(int levelId) {
+      auto cachePath = getCachePath();
+      auto existingData = utils::file::readString(cachePath);
+      if (existingData) {
+            auto parsed = matjson::parse(existingData.unwrap());
+            if (parsed) {
+                  auto root = parsed.unwrap();
+                  if (root.isObject()) {
+                        std::string key = fmt::format("{}", levelId);
+                        auto result = root.erase(key);
+                  }
+                  auto jsonString = root.dump();
+                  auto writeResult = utils::file::writeString(cachePath, jsonString);
+                  log::debug("Deleted level ID {} from cache", levelId);
+            }
+      }
+}
+
+// save level cache
+static void cacheLevelData(int levelId, const matjson::Value& data) {
+      auto saveDir = dirs::getModsSaveDir();
+      auto createDirResult = utils::file::createDirectory(saveDir);
+      if (!createDirResult) {
+            log::warn("Failed to create save directory for cache");
+            return;
+      }
+
+      auto cachePath = getCachePath();
+
+      // load existing cache
+      matjson::Value root = matjson::Value::object();
+      auto existingData = utils::file::readString(cachePath);
+      if (existingData) {
+            auto parsed = matjson::parse(existingData.unwrap());
+            if (parsed) {
+                  root = parsed.unwrap();
+            }
+      }
+
+      // update data
+      root[fmt::format("{}", levelId)] = data;
+
+      // write to file
+      auto jsonString = root.dump();
+      auto writeResult = utils::file::writeString(cachePath, jsonString);
+      if (writeResult) {
+            log::debug("Cached level rating data for level ID: {}", levelId);
+      }
+}
 
 // most of the code here are just repositioning the stars and coins to fit the
 // new difficulty icon its very messy, yes but it just works do please clean up
@@ -89,6 +165,17 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
             int levelId = this->m_level->m_levelID;
             log::info("Fetching rating data for level ID: {}", levelId);
 
+            // Try to load from cache first
+            auto cachedData = getCachedLevel(levelId);
+
+            if (cachedData) {
+                  log::debug("Loading cached rating data for level ID: {}", levelId);
+                  Ref<RLLevelInfoLayer> layerRef = this;
+                  auto difficultySprite = layerRef->getChildByID("difficulty-sprite");
+                  processLevelRating(cachedData.value(), layerRef, difficultySprite);
+                  return;
+            }
+
             auto getReq = web::WebRequest();
             auto getTask = getReq.get(fmt::format(
                 "https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId));
@@ -118,105 +205,376 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                   }
 
                   auto json = jsonRes.unwrap();
-                  int difficulty = json["difficulty"].asInt().unwrapOrDefault();
-                  int featured = json["featured"].asInt().unwrapOrDefault();
 
-                  log::info("difficulty: {}, featured: {}", difficulty, featured);
+                  // Cache the response
+                  cacheLevelData(layerRef->m_level->m_levelID, json);
 
-                  // check if the level needs to submit completion reward if completed
-                  if (GameStatsManager::sharedState()->hasCompletedOnlineLevel(
-                          layerRef->m_level->m_levelID)) {
-                        log::info("Level is completed, submitting completion reward");
+                  layerRef->processLevelRating(json, layerRef, difficultySprite);
+            });
+      }
+      void processLevelRating(const matjson::Value& json, Ref<RLLevelInfoLayer> layerRef, CCNode* difficultySprite) {
+            int difficulty = json["difficulty"].asInt().unwrapOrDefault();
+            int featured = json["featured"].asInt().unwrapOrDefault();
 
-                        int levelId = layerRef->m_level->m_levelID;
-                        int accountId = GJAccountManager::get()->m_accountID;
-                        std::string argonToken =
-                            Mod::get()->getSavedValue<std::string>("argon_token");
-
-                        matjson::Value jsonBody;
-                        jsonBody["accountId"] = accountId;
-                        jsonBody["argonToken"] = argonToken;
-                        jsonBody["levelId"] = levelId;
-
-                        auto submitReq = web::WebRequest();
-                        submitReq.bodyJSON(jsonBody);
-                        auto submitTask = submitReq.post(
-                            "https://gdrate.arcticwoof.xyz/submitComplete");
-
-                        submitTask.listen([layerRef, difficulty, levelId,
-                                           difficultySprite](
-                                              web::WebResponse* submitResponse) {
-                              log::info(
-                                  "Received submitComplete response for level ID: {}",
-                                  levelId);
-
-                              if (!layerRef) {
-                                    log::warn("LevelInfoLayer has been destroyed");
-                                    return;
+            // If no difficulty rating, remove from cache
+            if (difficulty == 0) {
+                  auto cachePath = getCachePath();
+                  auto existingData = utils::file::readString(cachePath);
+                  if (existingData) {
+                        auto parsed = matjson::parse(existingData.unwrap());
+                        if (parsed) {
+                              auto root = parsed.unwrap();
+                              if (root.isObject()) {
+                                    std::string key = fmt::format("{}", layerRef->m_level->m_levelID);
+                                    auto result = root.erase(key);
                               }
+                              auto jsonString = root.dump();
+                              auto writeResult = utils::file::writeString(cachePath, jsonString);
+                              log::debug("Removed level ID {} from cache (no difficulty)", layerRef->m_level->m_levelID);
+                        }
+                  }
+                  return;
+            }
 
-                              if (!submitResponse->ok()) {
-                                    log::warn("submitComplete returned non-ok status: {}",
-                                              submitResponse->code());
-                                    return;
-                              }
+            log::info("difficulty: {}, featured: {}", difficulty, featured);
 
-                              auto submitJsonRes = submitResponse->json();
-                              if (!submitJsonRes) {
-                                    log::warn(
-                                        "Failed to parse submitComplete JSON response");
-                                    return;
-                              }
+            // check if the level needs to submit completion reward if completed
+            if (GameStatsManager::sharedState()->hasCompletedOnlineLevel(
+                    layerRef->m_level->m_levelID)) {
+                  log::info("Level is completed, submitting completion reward");
 
-                              auto submitJson = submitJsonRes.unwrap();
-                              bool success =
-                                  submitJson["success"].asBool().unwrapOrDefault();
-                              int responseStars =
-                                  submitJson["stars"].asInt().unwrapOrDefault();
+                  int levelId = layerRef->m_level->m_levelID;
+                  int accountId = GJAccountManager::get()->m_accountID;
+                  std::string argonToken =
+                      Mod::get()->getSavedValue<std::string>("argon_token");
 
-                              log::info("submitComplete success: {}, response stars: {}",
-                                        success, responseStars);
+                  matjson::Value jsonBody;
+                  jsonBody["accountId"] = accountId;
+                  jsonBody["argonToken"] = argonToken;
+                  jsonBody["levelId"] = levelId;
 
-                              if (success) {
-                                    int displayStars = responseStars - difficulty;
-                                    log::info("Display stars: {} - {} = {}", responseStars,
-                                              difficulty, displayStars);
+                  auto submitReq = web::WebRequest();
+                  submitReq.bodyJSON(jsonBody);
+                  auto submitTask = submitReq.post(
+                      "https://gdrate.arcticwoof.xyz/submitComplete");
 
-                                    if (auto rewardLayer = CurrencyRewardLayer::create(
-                                            0, difficulty, 0, 0, CurrencySpriteType::Star,
-                                            0, CurrencySpriteType::Star, 0,
-                                            difficultySprite->getPosition(),
-                                            CurrencyRewardType::Default, 0.0, 1.0)) {
-                                          rewardLayer->m_starsLabel->setString(
-                                              numToString(displayStars).c_str());
-                                          rewardLayer->m_stars = displayStars;
-                                          rewardLayer->m_starsSprite =
-                                              CCSprite::create("rlStarIcon.png"_spr);
+                  submitTask.listen([layerRef, difficulty, levelId,
+                                     difficultySprite](
+                                        web::WebResponse* submitResponse) {
+                        log::info(
+                            "Received submitComplete response for level ID: {}",
+                            levelId);
 
-                                          if (auto node =
-                                                  rewardLayer->m_mainNode
-                                                      ->getChildByType<CCSprite*>(0)) {
-                                                node->setDisplayFrame(
-                                                    CCSprite::create("rlStarIcon.png"_spr)
-                                                        ->displayFrame());
-                                                node->setScale(1.f);
-                                          }
+                        if (!layerRef) {
+                              log::warn("LevelInfoLayer has been destroyed");
+                              return;
+                        }
 
-                                          layerRef->addChild(rewardLayer, 100);
-                                          // @geode-ignore(unknown-resource)
-                                          FMODAudioEngine::sharedEngine()->playEffect(
-                                              "gold02.ogg");
+                        if (!submitResponse->ok()) {
+                              log::warn("submitComplete returned non-ok status: {}",
+                                        submitResponse->code());
+                              return;
+                        }
+
+                        auto submitJsonRes = submitResponse->json();
+                        if (!submitJsonRes) {
+                              log::warn(
+                                  "Failed to parse submitComplete JSON response");
+                              return;
+                        }
+
+                        auto submitJson = submitJsonRes.unwrap();
+                        bool success =
+                            submitJson["success"].asBool().unwrapOrDefault();
+                        int responseStars =
+                            submitJson["stars"].asInt().unwrapOrDefault();
+
+                        log::info("submitComplete success: {}, response stars: {}",
+                                  success, responseStars);
+
+                        if (success) {
+                              int displayStars = responseStars - difficulty;
+                              log::info("Display stars: {} - {} = {}", responseStars,
+                                        difficulty, displayStars);
+
+                              if (auto rewardLayer = CurrencyRewardLayer::create(
+                                      0, difficulty, 0, 0, CurrencySpriteType::Star,
+                                      0, CurrencySpriteType::Star, 0,
+                                      difficultySprite->getPosition(),
+                                      CurrencyRewardType::Default, 0.0, 1.0)) {
+                                    rewardLayer->m_starsLabel->setString(
+                                        numToString(displayStars).c_str());
+                                    rewardLayer->m_stars = displayStars;
+                                    rewardLayer->m_starsSprite =
+                                        CCSprite::create("rlStarIcon.png"_spr);
+
+                                    if (auto node =
+                                            rewardLayer->m_mainNode
+                                                ->getChildByType<CCSprite*>(0)) {
+                                          node->setDisplayFrame(
+                                              CCSprite::create("rlStarIcon.png"_spr)
+                                                  ->displayFrame());
+                                          node->setScale(1.f);
                                     }
-                              } else {
-                                    log::warn(
-                                        "level already completed and rewarded beforehand");
+
+                                    layerRef->addChild(rewardLayer, 100);
+                                    // @geode-ignore(unknown-resource)
+                                    FMODAudioEngine::sharedEngine()->playEffect(
+                                        "gold02.ogg");
                               }
-                        });
+                        } else {
+                              log::warn(
+                                  "level already completed and rewarded beforehand");
+                        }
+                  });
+            }
+
+            // Map difficulty to difficultyLevel
+            int difficultyLevel = 0;
+            bool isDemon = false;
+            switch (difficulty) {
+                  case 1:
+                        difficultyLevel = -1;
+                        break;
+                  case 2:
+                        difficultyLevel = 1;
+                        break;
+                  case 3:
+                        difficultyLevel = 2;
+                        break;
+                  case 4:
+                  case 5:
+                        difficultyLevel = 3;
+                        break;
+                  case 6:
+                  case 7:
+                        difficultyLevel = 4;
+                        break;
+                  case 8:
+                  case 9:
+                        difficultyLevel = 5;
+                        break;
+                  case 10:
+                        difficultyLevel = 7;
+                        isDemon = true;
+                        break;
+                  case 15:
+                        difficultyLevel = 8;
+                        isDemon = true;
+                        break;
+                  case 20:
+                        difficultyLevel = 6;
+                        isDemon = true;
+                        break;
+                  case 25:
+                        difficultyLevel = 9;
+                        isDemon = true;
+                        break;
+                  case 30:
+                        difficultyLevel = 10;
+                        isDemon = true;
+                        break;
+                  default:
+                        difficultyLevel = 0;
+                        break;
+            }
+
+            // Update the existing difficulty sprite
+            auto difficultySprite2 = layerRef->getChildByID("difficulty-sprite");
+            if (difficultySprite2) {
+                  auto sprite =
+                      static_cast<GJDifficultySprite*>(difficultySprite2);
+                  sprite->updateDifficultyFrame(difficultyLevel,
+                                                GJDifficultyName::Long);
+
+                  auto existingStarIcon =
+                      difficultySprite2->getChildByID("rl-star-icon");
+                  CCSprite* starIcon = nullptr;
+                  bool isFirstTime = !existingStarIcon;
+
+                  if (!existingStarIcon) {
+                        // star icon
+                        starIcon = CCSprite::create("rlStarIcon.png"_spr);
+                        starIcon->setPosition(
+                            {difficultySprite2->getContentSize().width / 2 + 7, -7});
+                        starIcon->setScale(0.53f);
+                        starIcon->setID("rl-star-icon");
+                        difficultySprite2->addChild(starIcon);
+                  } else {
+                        starIcon = static_cast<CCSprite*>(existingStarIcon);
                   }
 
-                  // Map difficulty to difficultyLevel
-                  int difficultyLevel = 0;
+                  // star value label (update or create)
+                  auto existingLabel =
+                      difficultySprite2->getChildByID("rl-star-label");
+                  auto starLabelValue =
+                      existingLabel
+                          ? static_cast<CCLabelBMFont*>(existingLabel)
+                          : CCLabelBMFont::create(numToString(difficulty).c_str(),
+                                                  "bigFont.fnt");
+
+                  if (existingLabel) {
+                        starLabelValue->setString(numToString(difficulty).c_str());
+                  } else {
+                        starLabelValue->setID("rl-star-label");
+                        starLabelValue->setPosition({starIcon->getPositionX() - 7,
+                                                     starIcon->getPositionY()});
+                        starLabelValue->setScale(0.4f);
+                        starLabelValue->setAnchorPoint({1.0f, 0.5f});
+                        starLabelValue->setAlignment(kCCTextAlignmentRight);
+                        difficultySprite2->addChild(starLabelValue);
+                  }
+
+                  if (GameStatsManager::sharedState()->hasCompletedOnlineLevel(
+                          layerRef->m_level->m_levelID)) {
+                        starLabelValue->setColor({0, 150, 255});  // cyan
+                  }
+
+                  auto coinIcon1 = layerRef->getChildByID("coin-icon-1");
+                  auto coinIcon2 = layerRef->getChildByID("coin-icon-2");
+                  auto coinIcon3 = layerRef->getChildByID("coin-icon-3");
+
+                  if (!layerRef->m_fields->m_difficultyOffsetApplied &&
+                      coinIcon1) {
+                        if (isDemon) {
+                              sprite->setPositionY(sprite->getPositionY() + 15);
+                        } else {
+                              sprite->setPositionY(sprite->getPositionY() + 10);
+                        }
+                        layerRef->m_fields->m_difficultyOffsetApplied = true;
+
+                        // time to adjust the coins as well
+                        coinIcon1->setPositionY(
+                            coinIcon1->getPositionY() -
+                            (isDemon ? 6 : 4));  // very precise yesh
+                        if (coinIcon2)
+                              coinIcon2->setPositionY(coinIcon2->getPositionY() -
+                                                      (isDemon ? 6 : 4));
+                        if (coinIcon3)
+                              coinIcon3->setPositionY(coinIcon3->getPositionY() -
+                                                      (isDemon ? 6 : 4));
+                  } else if (!layerRef->m_fields->m_difficultyOffsetApplied &&
+                             !coinIcon1) {
+                        // No coins, but still apply offset for levels without coins
+                        if (isDemon) {
+                              sprite->setPositionY(sprite->getPositionY() + 15);
+                        } else {
+                              sprite->setPositionY(sprite->getPositionY() + 10);
+                        }
+                        layerRef->m_fields->m_difficultyOffsetApplied = true;
+                  }
+            }
+
+            // Update featured coin visibility
+            if (difficultySprite2) {
+                  auto featuredCoin =
+                      difficultySprite2->getChildByID("featured-coin");
+                  if (featured == 1) {
+                        if (!featuredCoin) {
+                              auto newFeaturedCoin =
+                                  CCSprite::create("rlfeaturedCoin.png"_spr);
+                              newFeaturedCoin->setPosition(
+                                  {difficultySprite2->getContentSize().width / 2,
+                                   difficultySprite2->getContentSize().height / 2});
+                              newFeaturedCoin->setID("featured-coin");
+                              difficultySprite2->addChild(newFeaturedCoin, -1);
+                        }
+                  } else {
+                        if (featuredCoin) {
+                              featuredCoin->removeFromParent();
+                        }
+                  }
+            }
+      }
+
+      // this shouldnt exist but it must be done to fix that positions
+      void levelUpdateFinished(GJGameLevel* level, UpdateResponse response) {
+            LevelInfoLayer::levelUpdateFinished(level, response);
+
+            auto difficultySprite = this->getChildByID("difficulty-sprite");
+            if (difficultySprite && m_fields->m_difficultyOffsetApplied) {
+                  auto sprite = static_cast<GJDifficultySprite*>(difficultySprite);
+
+                  int levelId = this->m_level->m_levelID;
+
+                  // Try to load from cache first
+                  auto cachedData = getCachedLevel(levelId);
+
+                  Ref<RLLevelInfoLayer> layerRef = this;
+
+                  if (cachedData) {
+                        log::debug("Using cached data for levelUpdateFinished");
+                        processLevelUpdateWithDifficulty(cachedData.value(), layerRef);
+                        return;
+                  }
+
+                  auto getReq = web::WebRequest();
+                  auto getTask = getReq.get(fmt::format(
+                      "https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId));
+
+                  getTask.listen([layerRef](web::WebResponse* response) {
+                        if (!layerRef) {
+                              log::warn(
+                                  "LevelInfoLayer has been destroyed, skipping level "
+                                  "update");
+                              return;
+                        }
+
+                        if (!response->ok() || !response->json()) {
+                              return;
+                        }
+
+                        auto json = response->json().unwrap();
+
+                        // Cache the response
+                        cacheLevelData(layerRef->m_level->m_levelID, json);
+
+                        layerRef->processLevelUpdateWithDifficulty(json, layerRef);
+                  });
+            }
+      }
+
+      void processLevelUpdateWithDifficulty(const matjson::Value& json, Ref<RLLevelInfoLayer> layerRef) {
+            int difficulty = json["difficulty"].asInt().unwrapOrDefault();
+
+            // If no difficulty rating, remove from cache
+            if (difficulty == 0) {
+                  auto cachePath = getCachePath();
+                  auto existingData = utils::file::readString(cachePath);
+                  if (existingData) {
+                        auto parsed = matjson::parse(existingData.unwrap());
+                        if (parsed) {
+                              auto root = parsed.unwrap();
+                              if (root.isObject()) {
+                                    std::string key = fmt::format("{}", layerRef->m_level->m_levelID);
+                                    auto result = root.erase(key);
+                              }
+                              auto jsonString = root.dump();
+                              auto writeResult = utils::file::writeString(cachePath, jsonString);
+                              log::debug("Removed level ID {} from cache (no difficulty)", layerRef->m_level->m_levelID);
+                        }
+                  }
+                  return;
+            }
+
+            auto difficultySprite =
+                layerRef->getChildByID("difficulty-sprite");
+            if (difficultySprite) {
+                  auto sprite =
+                      static_cast<GJDifficultySprite*>(difficultySprite);
+
                   bool isDemon = false;
+                  switch (difficulty) {
+                        case 10:
+                        case 15:
+                        case 20:
+                        case 25:
+                        case 30:
+                              isDemon = true;
+                              break;
+                  }
+
+                  int difficultyLevel = 0;
                   switch (difficulty) {
                         case 1:
                               difficultyLevel = -1;
@@ -241,306 +599,100 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                               break;
                         case 10:
                               difficultyLevel = 7;
-                              isDemon = true;
                               break;
                         case 15:
                               difficultyLevel = 8;
-                              isDemon = true;
                               break;
                         case 20:
                               difficultyLevel = 6;
-                              isDemon = true;
                               break;
                         case 25:
                               difficultyLevel = 9;
-                              isDemon = true;
                               break;
                         case 30:
                               difficultyLevel = 10;
-                              isDemon = true;
                               break;
                         default:
                               difficultyLevel = 0;
                               break;
                   }
 
-                  // Update the existing difficulty sprite
-                  auto difficultySprite = layerRef->getChildByID("difficulty-sprite");
-                  if (difficultySprite) {
-                        auto sprite =
-                            static_cast<GJDifficultySprite*>(difficultySprite);
-                        sprite->updateDifficultyFrame(difficultyLevel,
-                                                      GJDifficultyName::Long);
+                  // BEFORE updating frame
+                  auto existingStarIcon =
+                      sprite->getChildByID("rl-star-icon");
+                  auto existingStarLabel =
+                      sprite->getChildByID("rl-star-label");
 
-                        auto existingStarIcon =
-                            difficultySprite->getChildByID("rl-star-icon");
-                        CCSprite* starIcon = nullptr;
-                        bool isFirstTime = !existingStarIcon;
+                  if (existingStarIcon || difficulty == 0) {
+                        existingStarIcon->removeFromParent();
+                  }
 
-                        if (!existingStarIcon) {
-                              // star icon
-                              starIcon = CCSprite::create("rlStarIcon.png"_spr);
-                              starIcon->setPosition(
-                                  {difficultySprite->getContentSize().width / 2 + 7, -7});
-                              starIcon->setScale(0.53f);
-                              starIcon->setID("rl-star-icon");
-                              difficultySprite->addChild(starIcon);
-                        } else {
-                              starIcon = static_cast<CCSprite*>(existingStarIcon);
-                        }
+                  if (existingStarLabel || difficulty == 0) {
+                        existingStarLabel->removeFromParent();
+                  }
 
-                        // star value label (update or create)
-                        auto existingLabel =
-                            difficultySprite->getChildByID("rl-star-label");
-                        auto starLabelValue =
-                            existingLabel
-                                ? static_cast<CCLabelBMFont*>(existingLabel)
-                                : CCLabelBMFont::create(numToString(difficulty).c_str(),
-                                                        "bigFont.fnt");
+                  // update difficulty frame
+                  sprite->updateDifficultyFrame(difficultyLevel,
+                                                GJDifficultyName::Long);
 
-                        if (existingLabel) {
-                              starLabelValue->setString(numToString(difficulty).c_str());
-                        } else {
-                              starLabelValue->setID("rl-star-label");
-                              starLabelValue->setPosition({starIcon->getPositionX() - 7,
-                                                           starIcon->getPositionY()});
-                              starLabelValue->setScale(0.4f);
-                              starLabelValue->setAnchorPoint({1.0f, 0.5f});
-                              starLabelValue->setAlignment(kCCTextAlignmentRight);
-                              difficultySprite->addChild(starLabelValue);
-                        }
-
-                        if (GameStatsManager::sharedState()->hasCompletedOnlineLevel(
-                                layerRef->m_level->m_levelID)) {
-                              starLabelValue->setColor({0, 150, 255});  // cyan
-                        }
-
+                  // AFTER frame update
+                  if (isDemon) {
+                        // if coin exists, reposition it
                         auto coinIcon1 = layerRef->getChildByID("coin-icon-1");
-                        auto coinIcon2 = layerRef->getChildByID("coin-icon-2");
-                        auto coinIcon3 = layerRef->getChildByID("coin-icon-3");
-
-                        if (!layerRef->m_fields->m_difficultyOffsetApplied &&
-                            coinIcon1) {
-                              if (isDemon) {
-                                    sprite->setPositionY(sprite->getPositionY() + 15);
-                              } else {
-                                    sprite->setPositionY(sprite->getPositionY() + 10);
-                              }
-                              layerRef->m_fields->m_difficultyOffsetApplied = true;
-
-                              // time to adjust the coins as well
-                              coinIcon1->setPositionY(
-                                  coinIcon1->getPositionY() -
-                                  (isDemon ? 6 : 4));  // very precise yesh
-                              if (coinIcon2)
-                                    coinIcon2->setPositionY(coinIcon2->getPositionY() -
-                                                            (isDemon ? 6 : 4));
-                              if (coinIcon3)
-                                    coinIcon3->setPositionY(coinIcon3->getPositionY() -
-                                                            (isDemon ? 6 : 4));
-                        } else if (!layerRef->m_fields->m_difficultyOffsetApplied &&
-                                   !coinIcon1) {
-                              // No coins, but still apply offset for levels without coins
-                              if (isDemon) {
-                                    sprite->setPositionY(sprite->getPositionY() + 15);
-                              } else {
-                                    sprite->setPositionY(sprite->getPositionY() + 10);
-                              }
-                              layerRef->m_fields->m_difficultyOffsetApplied = true;
-                        }
-                  }
-
-                  // Update featured coin visibility
-                  if (difficultySprite) {
-                        auto featuredCoin =
-                            difficultySprite->getChildByID("featured-coin");
-                        if (featured == 1) {
-                              if (!featuredCoin) {
-                                    auto newFeaturedCoin =
-                                        CCSprite::create("rlfeaturedCoin.png"_spr);
-                                    newFeaturedCoin->setPosition(
-                                        {difficultySprite->getContentSize().width / 2,
-                                         difficultySprite->getContentSize().height / 2});
-                                    newFeaturedCoin->setID("featured-coin");
-                                    difficultySprite->addChild(newFeaturedCoin, -1);
-                              }
+                        if (coinIcon1) {
+                              sprite->setPositionY(sprite->getPositionY() +
+                                                   20);  // lol
                         } else {
-                              if (featuredCoin) {
-                                    featuredCoin->removeFromParent();
-                              }
+                              sprite->setPositionY(sprite->getPositionY() + 10);
                         }
+
+                  } else {
+                        sprite->setPositionY(sprite->getPositionY() + 10);
                   }
-            });
-      }
 
-      // this shouldnt exist but it must be done to fix that positions
-      void levelUpdateFinished(GJGameLevel* level, UpdateResponse response) {
-            LevelInfoLayer::levelUpdateFinished(level, response);
+                  // if rated just now
+                  if (difficulty != 0) {
+                        // Create star icon and label AFTER frame update with
+                        // correct sprite size
+                        auto starIcon = CCSprite::create("rlStarIcon.png"_spr);
+                        starIcon->setScale(0.53f);
+                        starIcon->setID("rl-star-icon");
+                        sprite->addChild(starIcon);
 
-            auto difficultySprite = this->getChildByID("difficulty-sprite");
-            if (difficultySprite && m_fields->m_difficultyOffsetApplied) {
-                  auto sprite = static_cast<GJDifficultySprite*>(difficultySprite);
+                        auto starLabel = CCLabelBMFont::create(
+                            numToString(difficulty).c_str(), "bigFont.fnt");
+                        starLabel->setID("rl-star-label");
+                        starLabel->setScale(0.4f);
+                        starLabel->setAnchorPoint({1.0f, 0.5f});
+                        starLabel->setAlignment(kCCTextAlignmentRight);
+                        sprite->addChild(starLabel);
 
-                  int levelId = this->m_level->m_levelID;
-                  auto getReq = web::WebRequest();
-                  auto getTask = getReq.get(fmt::format(
-                      "https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId));
+                        starIcon->setPosition(
+                            {sprite->getContentSize().width / 2 + 7, -7});
+                        starLabel->setPosition({starIcon->getPositionX() - 7,
+                                                starIcon->getPositionY()});
 
-                  Ref<RLLevelInfoLayer> layerRef = this;
-
-                  getTask.listen([layerRef](web::WebResponse* response) {
-                        if (!layerRef) {
-                              log::warn(
-                                  "LevelInfoLayer has been destroyed, skipping level "
-                                  "update");
-                              return;
+                        // Update featured coin position
+                        auto featureCoin = sprite->getChildByID("featured-coin");
+                        if (featureCoin) {
+                              featureCoin->setPosition(
+                                  {difficultySprite->getContentSize().width / 2,
+                                   difficultySprite->getContentSize().height / 2});
                         }
 
-                        if (!response->ok() || !response->json()) {
-                              return;
-                        }
-
-                        auto json = response->json().unwrap();
-                        int difficulty = json["difficulty"].asInt().unwrapOrDefault();
-
-                        auto difficultySprite =
-                            layerRef->getChildByID("difficulty-sprite");
-                        if (difficultySprite) {
-                              auto sprite =
-                                  static_cast<GJDifficultySprite*>(difficultySprite);
-
-                              bool isDemon = false;
-                              switch (difficulty) {
-                                    case 10:
-                                    case 15:
-                                    case 20:
-                                    case 25:
-                                    case 30:
-                                          isDemon = true;
-                                          break;
-                              }
-
-                              int difficultyLevel = 0;
-                              switch (difficulty) {
-                                    case 1:
-                                          difficultyLevel = -1;
-                                          break;
-                                    case 2:
-                                          difficultyLevel = 1;
-                                          break;
-                                    case 3:
-                                          difficultyLevel = 2;
-                                          break;
-                                    case 4:
-                                    case 5:
-                                          difficultyLevel = 3;
-                                          break;
-                                    case 6:
-                                    case 7:
-                                          difficultyLevel = 4;
-                                          break;
-                                    case 8:
-                                    case 9:
-                                          difficultyLevel = 5;
-                                          break;
-                                    case 10:
-                                          difficultyLevel = 7;
-                                          break;
-                                    case 15:
-                                          difficultyLevel = 8;
-                                          break;
-                                    case 20:
-                                          difficultyLevel = 6;
-                                          break;
-                                    case 25:
-                                          difficultyLevel = 9;
-                                          break;
-                                    case 30:
-                                          difficultyLevel = 10;
-                                          break;
-                                    default:
-                                          difficultyLevel = 0;
-                                          break;
-                              }
-
-                              // BEFORE updating frame
-                              auto existingStarIcon =
-                                  sprite->getChildByID("rl-star-icon");
-                              auto existingStarLabel =
-                                  sprite->getChildByID("rl-star-label");
-
-                              if (existingStarIcon || difficulty == 0) {
-                                    existingStarIcon->removeFromParent();
-                              }
-
-                              if (existingStarLabel || difficulty == 0) {
-                                    existingStarLabel->removeFromParent();
-                              }
-
-                              // update difficulty frame
-                              sprite->updateDifficultyFrame(difficultyLevel,
-                                                            GJDifficultyName::Long);
-
-                              // AFTER frame update
-                              if (isDemon) {
-                                    // if coin exists, reposition it
-                                    auto coinIcon1 = layerRef->getChildByID("coin-icon-1");
-                                    if (coinIcon1) {
-                                          sprite->setPositionY(sprite->getPositionY() +
-                                                               20);  // lol
-                                    } else {
-                                          sprite->setPositionY(sprite->getPositionY() + 10);
-                                    }
-
-                              } else {
-                                    sprite->setPositionY(sprite->getPositionY() + 10);
-                              }
-
-                              // if rated just now
-                              if (difficulty != 0) {
-                                    // Create star icon and label AFTER frame update with
-                                    // correct sprite size
-                                    auto starIcon = CCSprite::create("rlStarIcon.png"_spr);
-                                    starIcon->setScale(0.53f);
-                                    starIcon->setID("rl-star-icon");
-                                    sprite->addChild(starIcon);
-
-                                    auto starLabel = CCLabelBMFont::create(
-                                        numToString(difficulty).c_str(), "bigFont.fnt");
-                                    starLabel->setID("rl-star-label");
-                                    starLabel->setScale(0.4f);
-                                    starLabel->setAnchorPoint({1.0f, 0.5f});
-                                    starLabel->setAlignment(kCCTextAlignmentRight);
-                                    sprite->addChild(starLabel);
-
-                                    starIcon->setPosition(
-                                        {sprite->getContentSize().width / 2 + 7, -7});
-                                    starLabel->setPosition({starIcon->getPositionX() - 7,
-                                                            starIcon->getPositionY()});
-
-                                    // Update featured coin position
-                                    auto featureCoin = sprite->getChildByID("featured-coin");
-                                    if (featureCoin) {
-                                          featureCoin->setPosition(
-                                              {difficultySprite->getContentSize().width / 2,
-                                               difficultySprite->getContentSize().height / 2});
-                                    }
-
-                                    // delayed reposition for stars after frame update to ensure
-                                    // proper positioning
-                                    auto delayAction = CCDelayTime::create(0.15f);
-                                    auto callFunc = CCCallFunc::create(
-                                        layerRef,
-                                        callfunc_selector(RLLevelInfoLayer::repositionStars));
-                                    auto sequence =
-                                        CCSequence::create(delayAction, callFunc, nullptr);
-                                    layerRef->runAction(sequence);
-                                    log::debug(
-                                        "levelUpdateFinished: repositionStars callback "
-                                        "scheduled");
-                              }
-                        }
-                  });
+                        // delayed reposition for stars after frame update to ensure
+                        // proper positioning
+                        auto delayAction = CCDelayTime::create(0.15f);
+                        auto callFunc = CCCallFunc::create(
+                            layerRef,
+                            callfunc_selector(RLLevelInfoLayer::repositionStars));
+                        auto sequence =
+                            CCSequence::create(delayAction, callFunc, nullptr);
+                        layerRef->runAction(sequence);
+                        log::debug(
+                            "levelUpdateFinished: repositionStars callback "
+                            "scheduled");
+                  }
             }
       }
 
@@ -709,5 +861,64 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                         Mod::get()->setSavedValue<int>("role", 0);
                   }
             });
+      }
+
+      // refresh rating data when level is refreshed
+      void onRefresh() {
+            if (this->m_level && this->m_level->m_levelID != 0) {
+                  log::debug("Refreshing level info for level ID: {}", this->m_level->m_levelID);
+
+                  int levelId = this->m_level->m_levelID;
+                  deleteLevelFromCache(levelId);  // clear cache to force fresh fetch
+
+                  auto getReq = web::WebRequest();
+                  auto getTask = getReq.get(fmt::format(
+                      "https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId));
+
+                  Ref<RLLevelInfoLayer> layerRef = this;
+
+                  getTask.listen([this, layerRef, levelId](web::WebResponse* response) {
+                        log::info("Received updated rating data from server for level ID: {}", levelId);
+
+                        if (!layerRef) {
+                              log::warn("LevelInfoLayer has been destroyed");
+                              return;
+                        }
+
+                        if (!response->ok() || !response->json()) {
+                              return;
+                        }
+
+                        auto json = response->json().unwrap();
+
+                        // Cache the updated response
+                        cacheLevelData(levelId, json);
+
+                        // Update the display with latest data
+                        layerRef->processLevelRating(json, layerRef, layerRef->getChildByID("difficulty-sprite"));
+                  });
+            }
+      }
+
+      // delete cache and refresh when level is updated
+      void onUpdate(CCObject* sender) {
+            if (this->m_level && this->m_level->m_levelID != 0 && shouldDownloadLevel()) {
+                  log::debug("Level updated, clearing cache for level ID: {}", this->m_level->m_levelID);
+                  deleteLevelFromCache(this->m_level->m_levelID);
+                  this->repositionStars();
+                  this->onRefresh();
+            }
+            LevelInfoLayer::onUpdate(sender);
+      }
+};
+
+// delete cache when deleting level
+class $modify(RLGameLevelManager, GameLevelManager) {
+      void deleteLevel(GJGameLevel* level) {
+            if (level && level->m_levelID != 0) {
+                  log::info("Deleting level ID: {} from cache", level->m_levelID);
+                  deleteLevelFromCache(level->m_levelID);
+            }
+            GameLevelManager::deleteLevel(level);
       }
 };

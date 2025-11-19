@@ -1,24 +1,23 @@
 # Rated Layouts
 
-An <cl>Alternative Rating System</c> that focus on rating classic layout levels! It adds a new rating type called <cl>Rated Layouts</c> that rates based on the level's layout design and interesting gameplay.
+A <cl>new and standalone</c> Rating System that focus on rating <cb>Classic Layout Levels</c>!
 
-This mod intergretes seemlessly with the current rating system and improved <cr>Demon Ratings</c> by providing a more accurate representation of a level's difficulty. <cr>_This does not include Platformers levels to be rated_</c>.
+This mod intergretes with the current rating system and improved <cr>Demon Ratings</c> by providing a more accurate representation of a level's difficulty as well as introducing a new rating system specifically for classic layout levels.
+
+<cr>**Platformers and Official Rated Levels won't be included!**</c>.
 
 <co>You can find the list of Rated Layouts at the Quick Search Menu on the Search Tab. (Next Page)</c>
 
 ## Features
 
 - **Layout Rating System**: Rates levels based on layout design, and fun gameplay. It doesn't focus on the decoration and more on the actual gameplay of the level!
+- **New Blueprint Stars**: Earn blueprint stars by completing rated layout levels!
+- **New Blueprint Creator Points**: Earn Blueprint Creator Points whenever you get a rated layout level!
 - **Seamless Integration**: Works alongside the existing rating system, this won't replace the current rating system but rather provide an alternative.
-- **Improved Demon Ratings**: More accurate demon ratings by introducing new difficulty value. <cy>10-30 blueprint stars for rated demon layout levels</cy>!
+- **Improved Demon Ratings**: More accurate demon ratings by introducing new difficulty value, making demons has more value depending on their actual difficulty.
 - **Faster Rating Process**: Community focus rating system which makes it easier to get levels rated quickly.
 - **Moderator Badges**: Special badges for moderators to identify the layout moderators and admins!
-- **Earn New Blueprint Stars**: Earn blueprint stars by completing rated layout levels!
-- **New Blueprint Creator Points**: Get Blueprint Creator Points whenever you get a rated layout level!
-
-_... and the best part..._
-
-- **Admins Rates Layout Levels**: Admins can now rate layout levels directly, similar to how <cy>Rob</c><cl>top</c> rates levels but faster lol!
+- **Lower Rating Standards**: More levels can be rated as rated layout levels with lower rating standards compared to the Robtop's rating system.
 
 ## Up-coming Features
 

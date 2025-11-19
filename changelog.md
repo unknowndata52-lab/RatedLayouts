@@ -1,3 +1,10 @@
+# v0.1.3-beta.1
+
+- Levels ratings are cached locally to reduce server requests and improve performance. (and removed when deleting the level)
+- Stars are now claimed when you enter the level from the level info layer if already beaten before.
+- Fixed issue where the stars icons in the level info layer are misaligned when refreshing the level.
+- Added Stars reward animation at the end level layer when beaten the level legitimately.
+
 # v0.1.2-beta.1
 
 - Fixed a crash that could occur when loading profile pages or comments if the user navigated away before the server responded.
