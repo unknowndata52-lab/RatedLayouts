@@ -18,6 +18,7 @@ protected:
     void onAccountClicked(CCObject* sender);
     void fetchLeaderboard(int type, int amount);
     void populateLeaderboard(const std::vector<matjson::Value>& users);
+    void onInfoButton(CCObject* sender);
     void keyBackClicked() override;
 
 public:

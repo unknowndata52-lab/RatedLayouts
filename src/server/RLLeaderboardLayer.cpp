@@ -66,7 +66,24 @@ bool RLLeaderboardLayer::init() {
       m_listLayer = listLayer;
       m_scrollLayer = scrollLayer;
 
+      // info button at the bottom left
+      auto infoMenu = CCMenu::create();
+      infoMenu->setPosition({0, 0});
+      auto infoButtonSpr = CCSprite::createWithSpriteFrameName("GJ_infoIcon_001.png");
+      auto infoButton = CCMenuItemSpriteExtra::create(
+          infoButtonSpr, this, menu_selector(RLLeaderboardLayer::onInfoButton));
+      infoButton->setPosition({25, 25});
+      infoMenu->addChild(infoButton);
+      this->addChild(infoMenu);
+
       return true;
+}
+
+void RLLeaderboardLayer::onInfoButton(CCObject* sender) {
+      MDPopup::create("Rated Layouts Leaderboard",
+                      "The leaderboard shows the top players in <cb>Rated Layouts</cb> based on <cl>Stars</cl> or <cl>Creator Points</cl>.",
+                      "OK")
+          ->show();
 }
 
 void RLLeaderboardLayer::onBackButton(CCObject* sender) {
