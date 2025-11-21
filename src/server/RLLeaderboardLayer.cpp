@@ -222,18 +222,20 @@ void RLLeaderboardLayer::populateLeaderboard(const std::vector<matjson::Value>& 
             auto accountLabel = CCLabelBMFont::create(
                 username.c_str(), "goldFont.fnt");
             accountLabel->setAnchorPoint({0.f, 0.5f});
-
-            auto accountButton = CCMenuItemLabel::create(
+            accountLabel->setScale(0.7f);
+            accountLabel->setPosition({50.f, 20.f});
+            
+            auto buttonMenu = CCMenu::create();
+            buttonMenu->setPosition({0, 0});
+            
+            auto accountButton = CCMenuItemSpriteExtra::create(
                 accountLabel,
                 this,
                 menu_selector(RLLeaderboardLayer::onAccountClicked));
             accountButton->setTag(accountId);
-            accountButton->setScale(0.7f);
             accountButton->setPosition({50.f, 20.f});
             accountButton->setAnchorPoint({0.f, 0.5f});
-
-            auto buttonMenu = CCMenu::create();
-            buttonMenu->setPosition({0, 0});
+            
             buttonMenu->addChild(accountButton);
             cell->addChild(buttonMenu);
 
