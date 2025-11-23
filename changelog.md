@@ -1,3 +1,7 @@
+# v0.1.5-beta.1
+
+- Added Player's Icons at the leaderboard. Might not update based on your profile but it's usually stored for statistics purposes.
+
 # v0.1.4-beta.1
 
 - Added Leaderboard! You can now view the top players based on the number of stars and creator points they have collected from rated layouts.
