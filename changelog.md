@@ -2,8 +2,9 @@
 
 - Added User logs and control panel (for moderators and admins)
 - Added credits or layout moderators and admins list
-- Added an settings to disable the background decoration in the Rated Layouts Creator Layer
-- Removed the background decoration
+- Added an settings to disable moving background
+- Added Disable Reward Animation (useful if you on mobile and it kept crashing)
+- Removed the background decoration because it kept lagging the game
 - Minor fixes
 
 # v0.1.7-beta.1

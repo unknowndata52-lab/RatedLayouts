@@ -292,25 +292,29 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                               log::info("Display stars: {} - {} = {}", responseStars, difficulty,
                                         displayStars);
 
-                              if (auto rewardLayer = CurrencyRewardLayer::create(
-                                      0, difficulty, 0, 0, CurrencySpriteType::Star, 0,
-                                      CurrencySpriteType::Star, 0, difficultySprite->getPosition(),
-                                      CurrencyRewardType::Default, 0.0, 1.0)) {
-                                    rewardLayer->m_starsLabel->setString(
-                                        numToString(displayStars).c_str());
-                                    rewardLayer->m_stars = displayStars;
-                                    rewardLayer->m_starsSprite = CCSprite::create("rlStarIconMed.png"_spr);
+                              if (!Mod::get()->getSettingValue<bool>("disableRewardAnimation")) {
+                                    if (auto rewardLayer = CurrencyRewardLayer::create(
+                                            0, difficulty, 0, 0, CurrencySpriteType::Star, 0,
+                                            CurrencySpriteType::Star, 0, difficultySprite->getPosition(),
+                                            CurrencyRewardType::Default, 0.0, 1.0)) {
+                                          rewardLayer->m_starsLabel->setString(
+                                              numToString(displayStars).c_str());
+                                          rewardLayer->m_stars = displayStars;
+                                          rewardLayer->m_starsSprite = CCSprite::create("rlStarIconMed.png"_spr);
 
-                                    if (auto node =
-                                            rewardLayer->m_mainNode->getChildByType<CCSprite*>(0)) {
-                                          node->setDisplayFrame(
-                                              CCSprite::create("rlStarIconMed.png"_spr)->displayFrame());
-                                          node->setScale(1.f);
+                                          if (auto node =
+                                                  rewardLayer->m_mainNode->getChildByType<CCSprite*>(0)) {
+                                                node->setDisplayFrame(
+                                                    CCSprite::create("rlStarIconMed.png"_spr)->displayFrame());
+                                                node->setScale(1.f);
+                                          }
+
+                                          layerRef->addChild(rewardLayer, 100);
+                                          // @geode-ignore(unknown-resource)
+                                          FMODAudioEngine::sharedEngine()->playEffect("gold02.ogg");
                                     }
-
-                                    layerRef->addChild(rewardLayer, 100);
-                                    // @geode-ignore(unknown-resource)
-                                    FMODAudioEngine::sharedEngine()->playEffect("gold02.ogg");
+                              } else {
+                                    log::info("Reward animation disabled");
                               }
                         } else {
                               log::warn("level already completed and rewarded beforehand");

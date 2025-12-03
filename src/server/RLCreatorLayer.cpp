@@ -30,7 +30,7 @@ bool RLCreatorLayer::init() {
 
       auto backButtonSpr =
           CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
-      auto backButton = CCMenuItemSpriteExtra::create(
+      CCMenuItemSpriteExtra* backButton = CCMenuItemSpriteExtra::create(
           backButtonSpr, this, menu_selector(RLCreatorLayer::onBackButton));
       backButton->setPosition({25, winSize.height - 25});
       backMenu->addChild(backButton);
@@ -41,7 +41,7 @@ bool RLCreatorLayer::init() {
           1.f,
           CircleBaseColor::Green,
           CircleBaseSize::Medium);
-          modSettingsBtnSprite->setScale(0.75f);
+      modSettingsBtnSprite->setScale(0.75f);
       auto settingsButton = CCMenuItemSpriteExtra::create(
           modSettingsBtnSprite, this, menu_selector(RLCreatorLayer::onSettingsButton));
       settingsButton->setPosition({winSize.width - 25, winSize.height - 25});

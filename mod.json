@@ -45,7 +45,13 @@
 			"name": "Disable Moving Background",
 			"type": "bool",
 			"default": false,
-			"description": "Disable the background in the Rated Layouts Creator Layer"
+			"description": "Disable moving background in the Rated Layouts Creator Layer and leaderboard layer"
+		},
+		"disableRewardAnimation": {
+			"name": "Disable Reward Animation",
+			"type": "bool",
+			"default": false,
+			"description": "Disable the reward animation when you complete a rated layout level <cy>Enable this if you kept crashing from the stars animation</cy>"
 		}
 	}
 }

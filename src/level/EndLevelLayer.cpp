@@ -157,31 +157,35 @@ class $modify(EndLevelLayer) {
 
                               // never used this before but its fancy
                               // some devices crashes from this, idk why soggify
-                              if (auto rewardLayer = CurrencyRewardLayer::create(
-                                      0, starReward, 0, 0, CurrencySpriteType::Star, 0,
-                                      CurrencySpriteType::Star, 0,
-                                      bigStarSprite->getPosition(),
-                                      CurrencyRewardType::Default, 0.0, 1.0)) {
-                                    // display the calculated stars
-                                    rewardLayer->m_starsLabel->setString(
-                                        numToString(displayStars).c_str());
-                                    rewardLayer->m_stars = displayStars;
-                                    rewardLayer->m_starsSprite =
-                                        CCSprite::create("rlStarIconMed.png"_spr);
+                              if (!Mod::get()->getSettingValue<bool>("disableRewardAnimation")) {
+                                    if (auto rewardLayer = CurrencyRewardLayer::create(
+                                            0, starReward, 0, 0, CurrencySpriteType::Star, 0,
+                                            CurrencySpriteType::Star, 0,
+                                            bigStarSprite->getPosition(),
+                                            CurrencyRewardType::Default, 0.0, 1.0)) {
+                                          // display the calculated stars
+                                          rewardLayer->m_starsLabel->setString(
+                                              numToString(displayStars).c_str());
+                                          rewardLayer->m_stars = displayStars;
+                                          rewardLayer->m_starsSprite =
+                                              CCSprite::create("rlStarIconMed.png"_spr);
 
-                                    // Replace the main display sprite
-                                    if (auto node = rewardLayer->m_mainNode
-                                                        ->getChildByType<CCSprite*>(0)) {
-                                          node->setDisplayFrame(
-                                              CCSprite::create("rlStarIcon.png"_spr)
-                                                  ->displayFrame());
-                                          node->setScale(1.f);
+                                          // Replace the main display sprite
+                                          if (auto node = rewardLayer->m_mainNode
+                                                              ->getChildByType<CCSprite*>(0)) {
+                                                node->setDisplayFrame(
+                                                    CCSprite::create("rlStarIcon.png"_spr)
+                                                        ->displayFrame());
+                                                node->setScale(1.f);
+                                          }
+
+                                          endLayerRef->addChild(rewardLayer, 100);
+                                          FMODAudioEngine::sharedEngine()->playEffect(
+                                              // @geode-ignore(unknown-resource)
+                                              "gold02.ogg");
                                     }
-
-                                    endLayerRef->addChild(rewardLayer, 100);
-                                    FMODAudioEngine::sharedEngine()->playEffect(
-                                        // @geode-ignore(unknown-resource)
-                                        "gold02.ogg");
+                              } else {
+                                    log::info("Reward animation disabled");
                               }
                         } else if (!success && responseStars == 0) {
                               Notification::create(
