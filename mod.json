@@ -51,7 +51,13 @@
 			"name": "Disable Reward Animation",
 			"type": "bool",
 			"default": false,
-			"description": "Disable the reward animation when you complete a rated layout level <cy>Enable this if you kept crashing from the stars animation</cy>"
+			"description": "Disable the reward animation when you complete a rated layout level <cy>Enable this if you kept crashing from the reward animation</cy>"
+		},
+		"compatibilityMode": {
+			"name": "Disable Fetch Requests",
+			"type": "bool",
+			"default": false,
+			"description": "Disables all <cy>/fetch</cy> requests to get level rating data. <cf>This is useful for mod developers that is having issues with the web request being clogged up... sorry andy</c>. <co>Ratings will not be shown on the Level cell unless you open the level on the Level Info Layer or have cached the ratings already.</co>"
 		}
 	}
 }

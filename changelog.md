@@ -1,3 +1,7 @@
+# v0.2.0-beta.1
+
+- Added an option to disable all fetch requests from the server to get the level rating data.
+
 # v0.1.9-beta.1
 
 - Fixed the Star Reward animation on the end level layer.

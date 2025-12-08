@@ -71,6 +71,11 @@ class $modify(LevelCell) {
       return;
     }
 
+    if (Mod::get()->getSettingValue<bool>("compatibilityMode")) {
+      // log::debug("skipping /fetch request for level ID: {}", levelId);
+      return;
+    }
+
     log::debug("Fetching rating data for level cell ID: {}", levelId);
 
     auto getReq = web::WebRequest();

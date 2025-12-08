@@ -120,7 +120,7 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer) {
 
     web::WebRequest()
         .param("type", 1)
-        .param("amount", 1000)
+        .param("amount", 100)
         .get("https://gdrate.arcticwoof.xyz/getLevels")
         .listen([this](web::WebResponse *res) {
           if (res && res->ok()) {
@@ -170,7 +170,7 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer) {
 
     web::WebRequest()
         .param("type", 2)
-        .param("amount", 1000)
+        .param("amount", 100)
         .get("https://gdrate.arcticwoof.xyz/getLevels")
         .listen([this](web::WebResponse *res) {
           if (res && res->ok()) {
@@ -221,7 +221,7 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer) {
 
     web::WebRequest()
         .param("type", 3)
-        .param("amount", 1000)
+        .param("amount", 100)
         .get("https://gdrate.arcticwoof.xyz/getLevels")
         .listen([this](web::WebResponse *res) {
           if (res && res->ok()) {
