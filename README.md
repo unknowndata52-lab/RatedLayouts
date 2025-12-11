@@ -28,6 +28,6 @@ This mod intergretes with the current rating system and improved <cr>Demon Ratin
 
 <co>**Note:** This is currently in beta and expected to have some bugs and unfinished features. Please report any issues you encounter!</c>
 
-<cj>**Thanks to current and former Globed Staff for helping testing and maintaining this mod!**</c>
+<cj>**Thanks to current and former Globed Staff for helping test and maintaining this mod!**</c>
 
-![king](arcticwoof.twitch_interactive/king.png)
+![King Clawthorne](arcticwoof.rated_layouts/king.png)

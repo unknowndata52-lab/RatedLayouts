@@ -5,9 +5,9 @@
 #include <deque>
 #include <random>
 
-#include "LevelSearchLayer.cpp"
 #include "RLCreditsPopup.hpp"
 #include "RLLeaderboardLayer.hpp"
+#include "RLSearchLayer.hpp"
 
 using namespace geode::prelude;
 
@@ -90,6 +90,13 @@ bool RLCreatorLayer::init() {
           sendSpr, this, menu_selector(RLCreatorLayer::onSendLayouts));
       sendItem->setID("send-layouts-button");
       mainMenu->addChild(sendItem);
+
+      auto searchSpr = CCSprite::create("RL_searchLayoutBtn.png"_spr);
+      if (!searchSpr) searchSpr = CCSprite::create("RL_searchLayoutBtn.png"_spr);
+      auto searchItem = CCMenuItemSpriteExtra::create(
+          searchSpr, this, menu_selector(RLCreatorLayer::onSearchLayouts));
+      searchItem->setID("search-layouts-button");
+      mainMenu->addChild(searchItem);
 
       // Try to use a grayscale sprite where available, but fallback to a regular sprite
       cocos2d::CCSprite* unknownSpr = CCSpriteGrayscale::create("RL_unknownBtn.png"_spr);
@@ -253,7 +260,7 @@ void RLCreatorLayer::onUnknownButton(CCObject* sender) {
             case 6:
                   dialogObj = DialogObject::create(
                       "Level Creator",
-                      "Who ever made this <cl>new rating system</c> is a <cg>genius</c>! Finally, you can get the <co>recognition</c> you deserve!",
+                      "Sorry if I'm a bit <cr>grumpy</c> today, it's just that my last <cy>three levels</c> didn't <cb>get a sent</c>...",
                       28,
                       .8f,
                       false,
@@ -333,14 +340,6 @@ void RLCreatorLayer::onCreditsButton(CCObject* sender) {
 void RLCreatorLayer::onBackButton(CCObject* sender) {
       CCDirector::sharedDirector()->popSceneWithTransition(
           0.5f, PopTransition::kPopTransitionFade);
-}
-
-void RLCreatorLayer::onLeaderboard(CCObject* sender) {
-      auto leaderboardLayer = RLLeaderboardLayer::create();
-      auto scene = CCScene::create();
-      scene->addChild(leaderboardLayer);
-      auto transitionFade = CCTransitionFade::create(0.5f, scene);
-      CCDirector::sharedDirector()->pushScene(transitionFade);
 }
 
 void RLCreatorLayer::onFeaturedLayouts(CCObject* sender) {
@@ -562,6 +561,23 @@ void RLCreatorLayer::update(float dt) {
             }
       }
 }
+
+void RLCreatorLayer::onLeaderboard(CCObject* sender) {
+      auto leaderboardLayer = RLLeaderboardLayer::create();
+      auto scene = CCScene::create();
+      scene->addChild(leaderboardLayer);
+      auto transitionFade = CCTransitionFade::create(0.5f, scene);
+      CCDirector::sharedDirector()->pushScene(transitionFade);
+}
+
+void RLCreatorLayer::onSearchLayouts(CCObject* sender) {
+      auto searchLayer = RLSearchLayer::create();
+      auto scene = CCScene::create();
+      scene->addChild(searchLayer);
+      auto transitionFade = CCTransitionFade::create(0.5f, scene);
+      CCDirector::sharedDirector()->pushScene(transitionFade);
+}
+
 
 RLCreatorLayer* RLCreatorLayer::create() {
       auto ret = new RLCreatorLayer();

@@ -174,7 +174,7 @@ class $modify(EndLevelLayer) {
                                           if (auto node = rewardLayer->m_mainNode
                                                               ->getChildByType<CCSprite*>(0)) {
                                                 node->setDisplayFrame(
-                                                    CCSprite::create("rlStarIcon.png"_spr)
+                                                    CCSprite::create("rlStarIconMed.png"_spr)
                                                         ->displayFrame());
                                                 node->setScale(1.f);
                                           }
@@ -193,6 +193,11 @@ class $modify(EndLevelLayer) {
                                     FMODAudioEngine::sharedEngine()->playEffect(
                                         // @geode-ignore(unknown-resource)
                                         "gold02.ogg");
+                                    // do the fake reward circle wave effect
+                                    auto fakeCircleWave = CCCircleWave::create(10.f, 110.f, 0.5f, false);
+                                    fakeCircleWave->m_color = ccWHITE;
+                                    fakeCircleWave->setPosition(bigStarSprite->getPosition());
+                                    endLayerRef->addChild(fakeCircleWave, 1);
                               }
                         } else if (!success && responseStars == 0) {
                               Notification::create(

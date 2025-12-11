@@ -1,7 +1,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/CreatorLayer.hpp>
 
-#include "../server/RLCreatorLayer.hpp"
+#include "../custom/RLCreatorLayer.hpp"
 
 using namespace geode::prelude;
 

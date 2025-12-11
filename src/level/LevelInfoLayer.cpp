@@ -321,6 +321,11 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                                     FMODAudioEngine::sharedEngine()->playEffect(
                                         // @geode-ignore(unknown-resource)
                                         "gold02.ogg");
+                                    // do the fake reward circle wave effect
+                                    auto fakeCircleWave = CCCircleWave::create(10.f, 110.f, 0.5f, false);
+                                    fakeCircleWave->m_color = ccWHITE;
+                                    fakeCircleWave->setPosition(difficultySprite->getPosition());
+                                    layerRef->addChild(fakeCircleWave, 1);
                               }
                         } else {
                               log::warn("level already completed and rewarded beforehand");
