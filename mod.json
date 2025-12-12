@@ -53,6 +53,12 @@
 			"default": false,
 			"description": "Disable the reward animation when you complete a rated layout level <cy>Enable this if you kept crashing from the reward animation</cy>"
 		},
+		"disableCommentGlow": {
+			"name": "Disable Comment Glow",
+			"type": "bool",
+			"default": false,
+			"description": "Disables the blue glow effect on comments made by users using <cl>Rated Layouts mod</cl>"
+		},
 		"compatibilityMode": {
 			"name": "Disable Fetch Requests",
 			"type": "bool",

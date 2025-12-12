@@ -9,7 +9,12 @@ static std::string getUserRoleCachePath() {
       return geode::utils::string::pathToString(saveDir / "user_role_cache.json");
 }
 
-static std::optional<int> getCachedUserRole(int accountId) {
+struct CachedUserProfile {
+      int role = 0;
+      int stars = 0;
+};
+
+static std::optional<CachedUserProfile> getCachedUserProfile(int accountId) {
       auto cachePath = getUserRoleCachePath();
       auto data = utils::file::readString(cachePath);
       if (!data) return std::nullopt;
@@ -18,13 +23,16 @@ static std::optional<int> getCachedUserRole(int accountId) {
       if (!json) return std::nullopt;
 
       auto root = json.unwrap();
-      if (root.isObject() && root.contains(fmt::format("{}", accountId))) {
-            return root[fmt::format("{}", accountId)].asInt().unwrapOrDefault();
-      }
-      return std::nullopt;
+      if (!root.isObject() || !root.contains(fmt::format("{}", accountId))) return std::nullopt;
+      auto entry = root[fmt::format("{}", accountId)];
+      if (!entry.isObject()) return std::nullopt;  // require cached entry to be an object
+      CachedUserProfile p;
+      p.role = entry["role"].asInt().unwrapOrDefault();
+      p.stars = entry["stars"].asInt().unwrapOrDefault();
+      return p;
 }
 
-static void cacheUserRole(int accountId, int role) {
+static void cacheUserProfile(int accountId, int role, int stars) {
       auto saveDir = dirs::getModsSaveDir();
       auto createDirResult = utils::file::createDirectory(saveDir);
       if (!createDirResult) {
@@ -41,7 +49,10 @@ static void cacheUserRole(int accountId, int role) {
             if (parsed) root = parsed.unwrap();
       }
 
-      root[fmt::format("{}", accountId)] = role;
+      matjson::Value obj = matjson::Value::object();
+      obj["role"] = role;
+      obj["stars"] = stars;
+      root[fmt::format("{}", accountId)] = obj;
 
       auto jsonString = root.dump();
       auto writeResult = utils::file::writeString(geode::utils::string::pathToString(cachePath), jsonString);
@@ -53,6 +64,7 @@ static void cacheUserRole(int accountId, int role) {
 class $modify(RLCommentCell, CommentCell) {
       struct Fields {
             int role = 0;
+            int stars = 0;
       };
 
       void loadFromComment(GJComment* comment) {
@@ -64,11 +76,13 @@ class $modify(RLCommentCell, CommentCell) {
             }
 
             // check cache first
-            auto cachedRole = getCachedUserRole(comment->m_accountID);
-            if (cachedRole) {
-                  m_fields->role = cachedRole.value();
-                  log::debug("Loaded cached role {} for user {}", m_fields->role, comment->m_accountID);
+            auto cachedProfile = getCachedUserProfile(comment->m_accountID);
+            if (cachedProfile) {
+                  m_fields->role = cachedProfile->role;
+                  m_fields->stars = cachedProfile->stars;
+                  log::debug("Loaded cached role {} and stars {} for user {}", m_fields->role, m_fields->stars, comment->m_accountID);
                   loadBadgeForComment(comment->m_accountID);
+                  applyStarGlow(comment->m_accountID, m_fields->stars);
                   return;
             }
 
@@ -137,13 +151,16 @@ class $modify(RLCommentCell, CommentCell) {
 
                   auto json = jsonRes.unwrap();
                   int role = json["role"].asInt().unwrapOrDefault();
+                  int stars = json["stars"].asInt().unwrapOrDefault();
                   cellRef->m_fields->role = role;
+                  cellRef->m_fields->stars = stars;
 
-                  cacheUserRole(accountId, role);
+                  cacheUserProfile(accountId, role, stars);
 
                   log::debug("User comment role: {}", role);
 
                   cellRef->loadBadgeForComment(accountId);
+                  cellRef->applyStarGlow(accountId, stars);
             });
       }
 
@@ -205,5 +222,37 @@ class $modify(RLCommentCell, CommentCell) {
                 "<cf>ArcticWoof</c> is the <ca>Creator and Developer</c> of <cl>Rated Layouts</c> Geode Mod.\nHe controls and manages everything within <cl>Rated Layouts</c>, including updates and adding new features as well as the ability to <cg>promote users to Layout Moderators or Administrators</c>.",
                 "OK")
                 ->show();
+      }
+
+      void applyStarGlow(int accountId, int stars) {
+            if (stars <= 0) return;
+            if (!m_mainLayer) return;
+            auto glowId = fmt::format("rl-comment-glow-{}", accountId);
+            // don't create duplicate glow
+            if (m_mainLayer->getChildByIDRecursive(glowId)) return;
+            auto glow = CCSprite::createWithSpriteFrameName("chest_glow_bg_001.png");
+            if (!glow) return;
+            if (m_accountComment) return;  // no glow for account comments
+            if (Mod::get()->getSettingValue<bool>("disableCommentGlow")) return;
+            if (m_compactMode) {
+                  glow->setID(glowId.c_str());
+                  glow->setAnchorPoint({0.195f, 0.5f});
+                  glow->setPosition({100, 10});
+                  glow->setColor({135, 180, 255});
+                  glow->setOpacity(150);
+                  glow->setRotation(90);
+                  glow->setScaleX(0.725f);
+                  glow->setScaleY(5.f);
+            } else {
+                  glow->setID(glowId.c_str());
+                  glow->setAnchorPoint({0.26f, 0.5f});
+                  glow->setPosition({80, 4});
+                  glow->setColor({135, 180, 255});
+                  glow->setOpacity(150);
+                  glow->setRotation(90);
+                  glow->setScaleX(1.6f);
+                  glow->setScaleY(7.f);
+            }
+            m_mainLayer->addChild(glow, -2);
       }
 };
