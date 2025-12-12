@@ -17,7 +17,7 @@ RLCreditsPopup* RLCreditsPopup::create() {
 };
 
 bool RLCreditsPopup::setup() {
-      setTitle("Rated Layout Credits");
+      setTitle("Rated Layouts Credits");
 
       auto scrollLayer = ScrollLayer::create({340.f, 195.f});
       scrollLayer->setPosition({20.f, 23.f});

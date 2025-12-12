@@ -1,3 +1,8 @@
+# v0.2.3-beta.1
+
+- **Added Difficulty Stats!** You can view your difficulty stats in your profile page, including the number of levels you've beaten for each difficulty.
+- Tweaked the Search Layer.
+
 # v0.2.2-beta.1
 
 - **Added Custom Search!** You can now search for Rated Layout Levels using various filters such as <cr>difficulty</c>, <co>level type</co> and more!

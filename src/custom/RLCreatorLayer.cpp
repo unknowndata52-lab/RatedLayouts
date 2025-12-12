@@ -490,7 +490,7 @@ void RLCreatorLayer::onSendLayouts(CCObject* sender) {
                                   CCDirector::sharedDirector()->pushScene(transitionFade);
                             } else {
                                   log::warn("No levels found in response");
-                                  Notification::create("No send layouts found",
+                                  Notification::create("No sent layouts found",
                                                        NotificationIcon::Warning)
                                       ->show();
                             }

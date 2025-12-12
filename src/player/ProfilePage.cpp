@@ -2,6 +2,7 @@
 #include <Geode/modify/ProfilePage.hpp>
 #include <argon/argon.hpp>
 
+#include "RLStarsTotalPopup.hpp"
 #include "RLUserControl.hpp"
 
 using namespace geode::prelude;
@@ -76,11 +77,20 @@ class $modify(RLProfilePage, ProfilePage) {
             statsMenu->addChild(container);
 
             if (!blueprintStars) {
-                  blueprintStars = CCSprite::create("rlStarIconMed.png"_spr);
-                  if (blueprintStars) {
-                        blueprintStars->setID("blueprint-stars-icon");
-                        blueprintStars->setScale(1.0f);
-                        statsMenu->addChild(blueprintStars);
+                  auto blueprintSprite = CCSprite::create("rlStarIconMed.png"_spr);
+                  if (blueprintSprite) {
+                        blueprintSprite->setScale(1.0f);
+                                    auto blueprintButton = CCMenuItemSpriteExtra::create(
+                                          blueprintSprite, this, menu_selector(RLProfilePage::onBlueprintStars));
+                                    blueprintButton->setID("blueprint-stars-icon");
+                                    if (auto statsMenuAsMenu = typeinfo_cast<CCMenu*>(statsMenu)) {
+                                            statsMenuAsMenu->addChild(blueprintButton);
+                                    } else {
+                                            auto btnMenu = CCMenu::create();
+                                            btnMenu->setPosition({0, 0});
+                                            btnMenu->addChild(blueprintButton);
+                                            statsMenu->addChild(btnMenu);
+                                    }
                   }
             }
 
@@ -134,7 +144,7 @@ class $modify(RLProfilePage, ProfilePage) {
             Ref<RLProfilePage> pageRef = this;
 
             // Handle the response
-            postTask.listen([pageRef, statsMenu](web::WebResponse* response) {
+            postTask.listen([pageRef, statsMenu, this](web::WebResponse* response) {
                   log::info("Received response from server");
 
                   if (!pageRef || !pageRef->m_mainLayer) {
@@ -202,9 +212,18 @@ class $modify(RLProfilePage, ProfilePage) {
 
                   auto blueprintStars = CCSprite::create("rlStarIconMed.png"_spr);
                   if (blueprintStars) {
-                        blueprintStars->setID("blueprint-stars-icon");
                         blueprintStars->setScale(1.0f);
-                        statsMenu->addChild(blueprintStars);
+                        auto blueprintButton = CCMenuItemSpriteExtra::create(
+                            blueprintStars, pageRef, menu_selector(RLProfilePage::onBlueprintStars));
+                        blueprintButton->setID("blueprint-stars-icon");
+                        if (auto statsMenuAsMenu = typeinfo_cast<CCMenu*>(statsMenu)) {
+                              statsMenuAsMenu->addChild(blueprintButton);
+                        } else {
+                              auto btnMenu = CCMenu::create();
+                              btnMenu->setPosition({0, 0});
+                              btnMenu->addChild(blueprintButton);
+                              statsMenu->addChild(btnMenu);
+                        }
                   }
 
                   if (points > 0) {
@@ -340,5 +359,10 @@ class $modify(RLProfilePage, ProfilePage) {
                 "<cf>ArcticWoof</c> is the <ca>Creator and Developer</c> of <cl>Rated Layouts</c> Geode Mod.\nHe controls and manages everything within <cl>Rated Layouts</c>, including updates and adding new features as well as the ability to <cg>promote users to Layout Moderators or Administrators</c>.",
                 "OK")
                 ->show();
+      }
+      void onBlueprintStars(CCObject* sender) {
+            int accountId = m_fields->accountId;
+            auto popup = RLStarsTotalPopup::create(accountId);
+            if (popup) popup->show();
       }
 };

@@ -3,7 +3,6 @@
 
 using namespace geode::prelude;
 
-// forward declaration for GJDifficultySprite from the engine
 class GJDifficultySprite;
 
 class RLSearchLayer : public CCLayer {
@@ -32,8 +31,7 @@ class RLSearchLayer : public CCLayer {
       RowLayout* m_optionsLayout = nullptr;
       CCMenuItemSpriteExtra* m_featuredItem = nullptr;
       CCMenuItemSpriteExtra* m_awardedItem = nullptr;
-      CCMenuItemSpriteExtra* m_descendingItem = nullptr;
-      CCMenuItemSpriteExtra* m_ascendingItem = nullptr;
+      CCMenuItemSpriteExtra* m_oldestItem = nullptr;
 
       // difficulty filter buttons
       CCMenu* m_difficultyFilterMenu = nullptr;
@@ -49,10 +47,9 @@ class RLSearchLayer : public CCLayer {
       bool m_demonModeActive = false;
       bool m_featuredActive = false;
       bool m_awardedActive = false;
-      bool m_descendingActive = false;
-      bool m_ascendingActive = false;
-      void onAscendingToggle(CCObject* sender);
-      void onDescendingToggle(CCObject* sender);
+      bool m_oldestActive = false;
+      void onInfoButton(CCObject* sender);
+      void onOldestToggle(CCObject* sender);
       void onAwardedToggle(CCObject* sender);
       void onFeaturedToggle(CCObject* sender);
       void onDemonToggle(CCObject* sender);

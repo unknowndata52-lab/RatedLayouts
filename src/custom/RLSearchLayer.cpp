@@ -335,21 +335,25 @@ bool RLSearchLayer::init() {
       m_awardedItem = awardedItem;
       optionsMenu->addChild(awardedItem);
 
-      // sorting toggles - descending and ascending (mutually exclusive)
-      auto descendingSpr = ButtonSprite::create("Descending", "goldFont.fnt", "GJ_button_01.png");
-      auto descendingItem = CCMenuItemSpriteExtra::create(descendingSpr, this, menu_selector(RLSearchLayer::onDescendingToggle));
-      descendingItem->setScale(1.0f);
-      descendingItem->setID("descending-toggle");
-      m_descendingItem = descendingItem;
-      optionsMenu->addChild(descendingItem);
-
-      auto ascendingSpr = ButtonSprite::create("Ascending", "goldFont.fnt", "GJ_button_01.png");
-      auto ascendingItem = CCMenuItemSpriteExtra::create(ascendingSpr, this, menu_selector(RLSearchLayer::onAscendingToggle));
-      ascendingItem->setScale(1.0f);
-      ascendingItem->setID("ascending-toggle");
-      m_ascendingItem = ascendingItem;
-      optionsMenu->addChild(ascendingItem);
+      // sorting toggle - descending
+      auto oldestSpr = ButtonSprite::create("Oldest", "goldFont.fnt", "GJ_button_01.png");
+      auto oldestItem = CCMenuItemSpriteExtra::create(oldestSpr, this, menu_selector(RLSearchLayer::onOldestToggle));
+      oldestItem->setScale(1.0f);
+      oldestItem->setID("oldest-toggle");
+      m_oldestItem = oldestItem;
+      optionsMenu->addChild(oldestItem);
       optionsMenu->updateLayout();
+
+      // info button yay
+      auto infoMenu = CCMenu::create();
+      infoMenu->setPosition({0, 0});
+      auto infoButtonSpr =
+          CCSprite::createWithSpriteFrameName("GJ_infoIcon_001.png");
+      auto infoButton = CCMenuItemSpriteExtra::create(
+          infoButtonSpr, this, menu_selector(RLSearchLayer::onInfoButton));
+      infoButton->setPosition({25, 25});
+      infoMenu->addChild(infoButton);
+      this->addChild(infoMenu);
 
       this->addChild(m_difficultyFilterMenu);
 
@@ -357,6 +361,18 @@ bool RLSearchLayer::init() {
       this->scheduleUpdate();
 
       return true;
+}
+
+void RLSearchLayer::onInfoButton(CCObject* sender) {
+      MDPopup::create(
+          "Rated Layouts Search",
+          "Use the <cg>search bar</c> to find Rated Layouts by <co>name or keywords.</c>\n\n"
+          "Use the <cr>difficulty filter</c> to select which <cl>layout difficulties</c> to include in the search. You can select <cy>multiple difficulties at once.</c>\n\n"
+          "Toggle the Demon icon to switch to Demon difficulties\n\n"
+          "Use the <cb>options</c> to filter your search.\n\n"
+          "Press the <cg>Search button</c> to perform the search with the selected criteria.",
+          "OK")
+          ->show();
 }
 
 void RLSearchLayer::onSearchButton(CCObject* sender) {
@@ -388,8 +404,7 @@ void RLSearchLayer::onSearchButton(CCObject* sender) {
 
       int featuredParam = m_featuredActive ? 1 : 0;
       int awardedParam = m_awardedActive ? 1 : 0;
-      int descendingParam = m_descendingActive ? 1 : 0;
-      int ascendingParam = m_ascendingActive ? 1 : 0;
+      int oldestParam = m_oldestActive ? 1 : 0;
       std::string queryParam = "";
       if (m_searchInput) queryParam = m_searchInput->getString();
 
@@ -399,8 +414,7 @@ void RLSearchLayer::onSearchButton(CCObject* sender) {
       if (!queryParam.empty()) req.param("query", queryParam);
       // query params
       req.param("awarded", numToString(awardedParam));
-      req.param("descending", numToString(descendingParam));
-      req.param("ascending", numToString(ascendingParam));
+      req.param("oldest", numToString(oldestParam));
 
       req.get("https://gdrate.arcticwoof.xyz/search").listen([this](web::WebResponse* res) {
             if (!res || !res->ok()) {
@@ -478,43 +492,18 @@ void RLSearchLayer::onAwardedToggle(CCObject* sender) {
       }
 }
 
-void RLSearchLayer::onDescendingToggle(CCObject* sender) {
+void RLSearchLayer::onOldestToggle(CCObject* sender) {
       auto item = static_cast<CCMenuItemSpriteExtra*>(sender);
       if (!item) return;
-      // Toggle descending; when enabling descending, disable ascending
-      m_descendingActive = !m_descendingActive;
-      if (m_descendingActive && m_ascendingActive) {
-            m_ascendingActive = false;
-            if (m_ascendingItem) {
-                  auto ascNormal = static_cast<ButtonSprite*>(m_ascendingItem->getNormalImage());
-                  if (ascNormal) ascNormal->updateBGImage("GJ_button_01.png");
-            }
-      }
+      // Toggle oldest
+      m_oldestActive = !m_oldestActive;
       auto normalNode = item->getNormalImage();
       auto btn = static_cast<ButtonSprite*>(normalNode);
       if (btn) {
-            btn->updateBGImage(m_descendingActive ? "GJ_button_02.png" : "GJ_button_01.png");
+            btn->updateBGImage(m_oldestActive ? "GJ_button_02.png" : "GJ_button_01.png");
       }
 }
 
-void RLSearchLayer::onAscendingToggle(CCObject* sender) {
-      auto item = static_cast<CCMenuItemSpriteExtra*>(sender);
-      if (!item) return;
-      // Toggle ascending; when enabling ascending, disable descending
-      m_ascendingActive = !m_ascendingActive;
-      if (m_ascendingActive && m_descendingActive) {
-            m_descendingActive = false;
-            if (m_descendingItem) {
-                  auto descNormal = static_cast<ButtonSprite*>(m_descendingItem->getNormalImage());
-                  if (descNormal) descNormal->updateBGImage("GJ_button_01.png");
-            }
-      }
-      auto normalNode = item->getNormalImage();
-      auto btn = static_cast<ButtonSprite*>(normalNode);
-      if (btn) {
-            btn->updateBGImage(m_ascendingActive ? "GJ_button_02.png" : "GJ_button_01.png");
-      }
-}
 
 void RLSearchLayer::onDemonToggle(CCObject* sender) {
       auto toggler = static_cast<CCMenuItemToggler*>(sender);

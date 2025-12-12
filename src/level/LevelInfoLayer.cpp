@@ -467,6 +467,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                   if (featured == 1) {
                         if (!featuredCoin) {
                               auto newFeaturedCoin = CCSprite::create("rlfeaturedCoin.png"_spr);
+                              newFeaturedCoin->setScale(0.95f);
                               newFeaturedCoin->setPosition(
                                   {difficultySprite2->getContentSize().width / 2,
                                    difficultySprite2->getContentSize().height / 2});
