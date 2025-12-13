@@ -1,8 +1,7 @@
 #include <Geode/Geode.hpp>
+#include <unordered_set>
 
 using namespace geode::prelude;
-
-class RLLoadingPopup; // forward declaration
 
 class RLEventLayouts : public geode::Popup<> {
      public:
@@ -34,5 +33,6 @@ class RLEventLayouts : public geode::Popup<> {
       EventSection m_sections[3];
       CCLayer* m_eventMenu = nullptr;
       bool m_setupFinished = false;
-      std::vector<std::pair<Ref<LevelInfoLayer>, GJGameLevel*>> m_pendingLayers;
+      std::unordered_set<int> m_pendingDownloads;
+      std::unordered_set<int> m_shownLevels;
 };

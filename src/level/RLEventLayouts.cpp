@@ -1,6 +1,7 @@
 #include "RLEventLayouts.hpp"
 
 #include <Geode/modify/GameLevelManager.hpp>
+#include <Geode/modify/LevelBrowserLayer.hpp>
 #include <Geode/modify/LevelInfoLayer.hpp>
 #include <Geode/modify/ProfilePage.hpp>
 #include <Geode/ui/Notification.hpp>
@@ -10,6 +11,9 @@
 #include <sstream>
 
 using namespace geode::prelude;
+
+// callbacks for getOnlineLevels responses keyed by search key
+static std::unordered_map<std::string, std::vector<std::function<void(cocos2d::CCArray*)>>> g_onlineLevelsCallbacks;
 
 // helper prototypes
 static std::string formatTime(long seconds);
@@ -135,10 +139,10 @@ bool RLEventLayouts::setup() {
             auto playMenu = CCMenu::create();
             playMenu->setPosition({0, 0});
             auto playSprite = CCSprite::createWithSpriteFrameName("GJ_playBtn2_001.png");
-            if (!playSprite) playSprite = CCSprite::createWithSpriteFrameName("GJ_playBtn2_001.png");\
+            if (!playSprite) playSprite = CCSprite::createWithSpriteFrameName("GJ_playBtn2_001.png");
             playSprite->setScale(0.5f);
             auto playButton = CCMenuItemSpriteExtra::create(playSprite, this, menu_selector(RLEventLayouts::onPlayEvent));
-            playButton->setPosition({cellW - 32.f, cellH / 2 + 1.f});
+            playButton->setPosition({cellW - 32.f, cellH / 2 + 2.5f});
             playButton->setAnchorPoint({0.5f, 0.5f});
             playMenu->addChild(playButton);
             container->addChild(playMenu, 2);
@@ -263,6 +267,38 @@ void RLEventLayouts::update(float dt) {
             if (sec.secondsLeft < 0) sec.secondsLeft = 0;
             if (sec.timerLabel) sec.timerLabel->setString((timerPrefixes[i] + formatTime((long)sec.secondsLeft)).c_str());
       }
+
+      // Check pending downloads and show LevelInfoLayer when complete
+      if (!m_pendingDownloads.empty()) {
+            std::vector<int> completed;
+            auto glm = GameLevelManager::sharedState();
+            for (auto id : m_pendingDownloads) {
+                  if (glm->hasDownloadedLevel(id)) {
+                        auto level = glm->getMainLevel(id, false);
+                        if (level && level->m_levelID == id) {
+                              // remove and clear any block overlay
+                              // re-enable play button if any
+                              // re-enable the play button if we can find the section
+                              for (int i = 0; i < 3; ++i) {
+                                    if (m_sections[i].levelId == id && m_sections[i].playButton) {
+                                          m_sections[i].playButton->setEnabled(true);
+                                          break;
+                                    }
+                              }
+                              // prevent repeated pushes
+                              if (m_shownLevels.find(id) == m_shownLevels.end()) {
+                                    m_shownLevels.insert(id);
+                                    CCDirector::sharedDirector()->pushScene(LevelInfoLayer::scene(level, false));
+                              }
+                              completed.push_back(id);
+                              break;
+                        }
+                  }
+            }
+            for (auto id : completed) {
+                  m_pendingDownloads.erase(id);
+            }
+      }
 }
 
 static std::string formatTime(long seconds) {
@@ -333,5 +369,96 @@ void RLEventLayouts::onCreatorClicked(CCObject* sender) {
 }
 
 void RLEventLayouts::onPlayEvent(CCObject* sender) {
+      if (!m_mainLayer) return;
+      auto menuItem = static_cast<CCMenuItem*>(sender);
+      if (!menuItem) return;
+      int levelId = menuItem->getTag();
+      if (levelId <= 0) return;
 
+      // Use GJSearchObject to check if we already have an online level stored
+      auto searchObj = GJSearchObject::create(SearchType::Search, numToString(levelId));
+      auto key = std::string(searchObj->getKey());
+      auto glm = GameLevelManager::sharedState();
+      auto stored = glm->getStoredOnlineLevels(key.c_str());
+
+      if (stored && stored->count() > 0) {
+            auto level = static_cast<GJGameLevel*>(stored->objectAtIndex(0));
+            if (level && level->m_levelID == levelId) {
+                  // prevent repeated pushes
+                  if (m_shownLevels.find(levelId) != m_shownLevels.end()) return;
+                  m_shownLevels.insert(levelId);
+                  // go directly to LevelInfoLayer
+                  CCDirector::sharedDirector()->pushScene(LevelInfoLayer::scene(level, false));
+                  return;
+            }
+      }
+
+      // start fetching online levels
+      if (m_pendingDownloads.find(levelId) == m_pendingDownloads.end()) {
+            m_pendingDownloads.insert(levelId);
+            // disable play button while loading
+            for (int i = 0; i < 3; ++i) {
+                  if (m_sections[i].levelId == levelId && m_sections[i].playButton) {
+                        m_sections[i].playButton->setEnabled(false);
+                        break;
+                  }
+            }
+            // get online levels for this level id (search by level id string)
+            auto searchObj = GJSearchObject::create(SearchType::Search, numToString(levelId));
+            auto key = std::string(searchObj->getKey());
+            // if the levels are already stored, use them directly
+            auto stored = GameLevelManager::sharedState()->getStoredOnlineLevels(key.c_str());
+            if (stored && stored->count() > 0) {
+                  // use first level in list
+                  auto lvl = static_cast<GJGameLevel*>(stored->objectAtIndex(0));
+                  if (lvl) {
+                        // re-enable play button
+                        for (int i = 0; i < 3; ++i) {
+                              if (m_sections[i].levelId == levelId && m_sections[i].playButton) {
+                                    m_sections[i].playButton->setEnabled(true);
+                                    break;
+                              }
+                        }
+                        if (m_shownLevels.find(levelId) == m_shownLevels.end()) {
+                              m_shownLevels.insert(levelId);
+                              CCDirector::sharedDirector()->pushScene(LevelInfoLayer::scene(lvl, false));
+                        }
+                  }
+            } else {
+                  // register a callback to be invoked when getOnlineLevels completes
+                  g_onlineLevelsCallbacks[key].push_back([this, levelId, key](cocos2d::CCArray* levels) {
+                        if (!levels || levels->count() == 0) return;
+                        auto lvl = static_cast<GJGameLevel*>(levels->objectAtIndex(0));
+                        if (!lvl) return;
+                        // re-enable play button
+                        for (int i = 0; i < 3; ++i) {
+                              if (m_sections[i].levelId == levelId && m_sections[i].playButton) {
+                                    m_sections[i].playButton->setEnabled(true);
+                                    break;
+                              }
+                        }
+                        // push LevelInfoLayer for first level
+                        if (m_shownLevels.find(levelId) == m_shownLevels.end()) {
+                              m_shownLevels.insert(levelId);
+                              CCDirector::sharedDirector()->pushScene(LevelInfoLayer::scene(lvl, false));
+                        }
+                  });
+                  GameLevelManager::sharedState()->getOnlineLevels(searchObj);
+            }
+      }
 }
+
+// Hook LevelBrowserLayer::loadLevelsFinished to dispatch callbacks when online levels load
+class $modify(RLLevelBrowserLayer, LevelBrowserLayer) {
+      void loadLevelsFinished(cocos2d::CCArray* levels, char const* key, int type) {
+            LevelBrowserLayer::loadLevelsFinished(levels, key, type);
+            if (!key) return;
+            std::string k = key;
+            auto it = g_onlineLevelsCallbacks.find(k);
+            if (it == g_onlineLevelsCallbacks.end()) return;
+            for (auto& cb : it->second) {
+                  cb(levels);
+            }
+            g_onlineLevelsCallbacks.erase(it);
+      }
+};
