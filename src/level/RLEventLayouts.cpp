@@ -174,13 +174,6 @@ bool RLEventLayouts::setup() {
             playButton->setAnchorPoint({0.5f, 0.5f});
             playMenu->addChild(playButton);
             container->addChild(playMenu, 2);
-            // add spinner for play button (default visible)
-            auto spinner = LoadingSpinner::create(32.f);
-            spinner->setPosition({cellW - 32.f, cellH / 2 + 2.5f});
-            spinner->setVisible(true);
-            playButton->setVisible(false);
-            playMenu->addChild(spinner);
-            m_sections[i].spinner = spinner;
             m_sections[i].playButton = playButton;
       }
 
@@ -280,83 +273,12 @@ bool RLEventLayouts::setup() {
                               sec->creatorButton->setPosition({55.f, 22.f});
                               sec->creatorButton->setContentSize({creatorLabel->getContentSize().width * creatorLabel->getScaleX(), 12.f});
                         }
-                        // set level id on play button, update UI based on download state
+                        // set level id on play button
                         if (sec->playButton) {
                               sec->playButton->setTag(levelId);
-                              auto glm = GameLevelManager::sharedState();
-                              if (glm->hasDownloadedLevel(levelId)) {
-                                    sec->playButton->setEnabled(true);
-                                    sec->playButton->setVisible(true);
-                                    if (sec->spinner) {
-                                          sec->spinner->setVisible(false);
-                                          if (sec->playButton) sec->playButton->setVisible(true);
-                                    }
-                                    // clear background download flag
-                                    selfRef->m_backgroundDownloads.erase(levelId);
-                              } else {
-                                    // if a background download is pending, show spinner and disable play
-                                    if (selfRef->m_backgroundDownloads.find(levelId) != selfRef->m_backgroundDownloads.end()) {
-                                          sec->playButton->setEnabled(false);
-                                          sec->playButton->setVisible(false);
-                                          if (sec->spinner) {
-                                                sec->spinner->setVisible(true);
-                                                if (sec->playButton) sec->playButton->setVisible(false);
-                                          }
-                                    } else {
-                                          // otherwise, show play button enabled by default
-                                          sec->playButton->setEnabled(true);
-                                          sec->playButton->setVisible(true);
-                                          if (sec->spinner) {
-                                                sec->spinner->setVisible(false);
-                                                if (sec->playButton) sec->playButton->setVisible(true);
-                                          }
-                                    }
-                              }
                         }
                         std::vector<std::string> timerPrefixes = {"Next Daily in ", "Next Weekly in ", "Next Monthly in "};
                         if (sec->timerLabel) sec->timerLabel->setString((timerPrefixes[idx] + formatTime((long)sec->secondsLeft)).c_str());
-                  }
-                  // prefetch the three event levels (type19 search with comma-separated ids)
-                  {
-                        std::string prefetchIds;
-                        bool firstPrefetch = true;
-                        for (int i = 0; i < 3; ++i) {
-                              auto id = selfRef->m_sections[i].levelId;
-                              if (id <= 0) continue;
-                              if (!firstPrefetch) prefetchIds += ",";
-                              prefetchIds += numToString(id);
-                              firstPrefetch = false;
-                        }
-                        if (!prefetchIds.empty()) {
-                              auto searchObj = GJSearchObject::create(SearchType::Type19, prefetchIds);
-                              auto key = std::string(searchObj->getKey());
-                              auto glm = GameLevelManager::sharedState();
-                              // register a callback to download levels when metadata arrives
-                              g_onlineLevelsCallbacks[key].push_back([selfRef, glm](cocos2d::CCArray* levels) {
-                                    if (!levels || levels->count() == 0) return;
-                                    for (int i = 0; i < levels->count(); ++i) {
-                                          auto lvl = static_cast<GJGameLevel*>(levels->objectAtIndex(i));
-                                          if (!lvl) continue;
-                                          int id = lvl->m_levelID;
-                                          if (id <= 0) continue;
-                                          // if not downloaded, initiate a download
-                                          if (!glm->hasDownloadedLevel(id)) {
-                                                selfRef->m_backgroundDownloads.insert(id);
-                                                // start background download and set spinner visible on UI if present
-                                                log::info("RLEventLayouts: Starting background download for level id {}", id);
-                                                glm->downloadLevel(id, false);
-                                                for (int j = 0; j < 3; ++j) {
-                                                      if (selfRef->m_sections[j].levelId == id && selfRef->m_sections[j].spinner) {
-                                                            selfRef->m_sections[j].spinner->setVisible(true);
-                                                            if (selfRef->m_sections[j].playButton) selfRef->m_sections[j].playButton->setVisible(false);
-                                                            break;
-                                                      }
-                                                }
-                                          }
-                                    }
-                              });
-                              GameLevelManager::sharedState()->getOnlineLevels(searchObj);
-                        }
                   }
             });
       }
@@ -378,10 +300,6 @@ void RLEventLayouts::onInfo(CCObject* sender) {
           ->show();
 }
 
-RLEventLayouts::~RLEventLayouts() {
-      g_eventLayoutsInstances.erase(this);
-}
-
 void RLEventLayouts::update(float dt) {
       std::vector<std::string> timerPrefixes = {"Next Daily in ", "Next Weekly in ", "Next Monthly in "};
       for (int i = 0; i < 3; ++i) {
@@ -390,43 +308,6 @@ void RLEventLayouts::update(float dt) {
             sec.secondsLeft -= dt;
             if (sec.secondsLeft < 0) sec.secondsLeft = 0;
             if (sec.timerLabel) sec.timerLabel->setString((timerPrefixes[i] + formatTime((long)sec.secondsLeft)).c_str());
-      }
-
-      // Check background downloads and clear completed ones
-      if (!m_backgroundDownloads.empty()) {
-            std::vector<int> bgCompleted;
-            auto glm = GameLevelManager::sharedState();
-            for (auto id : m_backgroundDownloads) {
-                  if (glm->hasDownloadedLevel(id)) {
-                        bgCompleted.push_back(id);
-                  }
-            }
-            for (auto id : bgCompleted) {
-                  m_backgroundDownloads.erase(id);
-            }
-      }
-}
-
-void RLEventLayouts::onDownloadCompleted(int id) {
-      m_backgroundDownloads.erase(id);
-      restoreUIForLevel(id);
-}
-
-void RLEventLayouts::onDownloadFailed(int id) {
-      m_backgroundDownloads.erase(id);
-      restoreUIForLevel(id);
-}
-
-void RLEventLayouts::restoreUIForLevel(int id) {
-      for (int i = 0; i < 3; ++i) {
-            if (m_sections[i].levelId == id) {
-                  if (m_sections[i].spinner) m_sections[i].spinner->setVisible(false);
-                  if (m_sections[i].playButton) {
-                        m_sections[i].playButton->setVisible(true);
-                        m_sections[i].playButton->setEnabled(true);
-                  }
-                  break;
-            }
       }
 }
 
@@ -542,54 +423,3 @@ void RLEventLayouts::onPlayEvent(CCObject* sender) {
 
       glm->getOnlineLevels(searchObj);
 }
-
-// Hook LevelBrowserLayer::loadLevelsFinished to dispatch callbacks when online levels load
-class $modify(RLLevelBrowserLayer, LevelBrowserLayer) {
-      void loadLevelsFinished(cocos2d::CCArray* levels, char const* key, int type) {
-            LevelBrowserLayer::loadLevelsFinished(levels, key, type);
-            if (!key) return;
-            std::string k = key;
-            auto it = g_onlineLevelsCallbacks.find(k);
-            if (it == g_onlineLevelsCallbacks.end()) return;
-            for (auto& cb : it->second) {
-                  cb(levels);
-            }
-            g_onlineLevelsCallbacks.erase(it);
-      }
-};
-
-// Helper to parse a level ID from a tag string (extract first numeric substring)
-static int parseLevelIdFromTag(const std::string& tag) {
-      std::string digits;
-      for (char c : tag) {
-            if (std::isdigit(static_cast<unsigned char>(c)))
-                  digits.push_back(c);
-            else if (!digits.empty())
-                  break;
-      }
-      if (digits.empty()) return -1;
-      return atoi(digits.c_str());
-}
-
-class $modify(RLGameLevelManager, GameLevelManager) {
-      void processOnDownloadLevelCompleted(gd::string response, gd::string tag, bool update) {
-            GameLevelManager::processOnDownloadLevelCompleted(response, tag, update);
-            std::string res = response;
-            std::string t = tag;
-            int id = parseLevelIdFromTag(t);
-            if (id <= 0) return;
-            if (res == "-1") {
-                  log::error("Download failed for level id {} tag {}", id, t);
-                  for (auto popup : g_eventLayoutsInstances) {
-                        if (!popup) continue;
-                        popup->onDownloadFailed(id);
-                  }
-            } else {
-                  log::info("Download completed for level id {}: {}", id, res);
-                  for (auto popup : g_eventLayoutsInstances) {
-                        if (!popup) continue;
-                        popup->onDownloadCompleted(id);
-                  }
-            }
-      }
-};

@@ -7,10 +7,6 @@ using namespace geode::prelude;
 class RLEventLayouts : public geode::Popup<> {
      public:
       static RLEventLayouts* create();
-      ~RLEventLayouts();
-      void onDownloadCompleted(int id);
-      void onDownloadFailed(int id);
-      void restoreUIForLevel(int id);
 
      private:
       bool setup() override;
@@ -35,10 +31,8 @@ class RLEventLayouts : public geode::Popup<> {
             int featured = 0;
             time_t createdAt = 0;
             double secondsLeft = 0.0;
-            LoadingSpinner* spinner = nullptr;
       };
       EventSection m_sections[3];
       CCLayer* m_eventMenu = nullptr;
       bool m_setupFinished = false;
-      std::unordered_set<int> m_backgroundDownloads;   // prefetch/background downloads
 };

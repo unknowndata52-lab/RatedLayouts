@@ -1,3 +1,7 @@
+# v0.2.5-beta.1
+
+- Minor fixes and code cleanup on Event Layouts.
+
 # v0.2.4-beta.1
 
 - Fixed issue with the event layouts loading the level incorrectly.
