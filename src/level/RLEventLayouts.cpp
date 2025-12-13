@@ -2,6 +2,7 @@
 
 #include <Geode/modify/GameLevelManager.hpp>
 #include <Geode/modify/LevelInfoLayer.hpp>
+#include <Geode/modify/ProfilePage.hpp>
 #include <Geode/ui/Notification.hpp>
 #include <chrono>
 #include <cstdio>
@@ -32,14 +33,8 @@ bool RLEventLayouts::setup() {
 
       auto contentSize = m_mainLayer->getContentSize();
 
-      m_eventMenu = CCMenu::create();
+      m_eventMenu = CCLayer::create();
       m_eventMenu->setPosition({contentSize.width / 2, contentSize.height / 2});
-
-      auto eventsLayout = ColumnLayout::create();
-      eventsLayout->setGap(10.f);
-      eventsLayout->setAutoGrowAxis(0.f);
-      eventsLayout->setAxisAlignment(AxisAlignment::Even);
-      m_eventMenu->setLayout(eventsLayout);
 
       float startY = contentSize.height - 50.f;
       float rowSpacing = 80.f;
@@ -52,37 +47,29 @@ bool RLEventLayouts::setup() {
             container->setContentSize({360.f, 64.f});
             container->setAnchorPoint({0, 0.5f});
 
-            // create a slightly smaller LevelCell to fit within the container
+            // determine correct background for event type
             float cellW = 360.f;
             float cellH = 64.f;
-            auto cell = LevelCell::create(cellW, cellH);
-            cell->setAnchorPoint({0, 0.5f});
-            cell->setPosition({10.f, 0});
-
-            // determine correct background for event type
             const char* bgTex = "GJ_square03.png";  // daily default
             if (i == 1) bgTex = "GJ_square05.png";  // weekly
             if (i == 2) bgTex = "GJ_square04.png";  // monthly
 
-            // create a scale9 sprite background for the cell and insert behind other UI
+            // create a scale9 sprite background
             auto bgSprite = CCScale9Sprite::create(bgTex);
             if (bgSprite) {
-                  bgSprite->setContentSize({cellW - 2.f, cellH - 2.f});
+                  bgSprite->setContentSize({cellW, cellH});
                   bgSprite->setAnchorPoint({0.f, 0.f});
                   bgSprite->setPosition({0.f, 0.f});
-                  cell->addChild(bgSprite, -1);
+                  container->addChild(bgSprite, -1);
             }
-
-            // attach cell to container and store the root
-            container->addChild(cell);
-            m_sections[i].root = cell;
             m_sections[i].container = container;
-            // add container to the menu so layout arranges it
-            m_eventMenu->addChild(container);
+            float startX = (contentSize.width - cellW) / 2.f;
+            container->setPosition({startX, startY - i * rowSpacing});
+            m_mainLayer->addChild(container);
 
             // Add a label for level title
             auto levelNameLabel = CCLabelBMFont::create("Loading...", "bigFont.fnt");
-            levelNameLabel->setPosition({80.f, 22.f});
+            levelNameLabel->setPosition({55.f, 40.f});
             levelNameLabel->setAnchorPoint({0.f, 0.5f});
             levelNameLabel->setScale(0.6f);
             container->addChild(levelNameLabel);
@@ -90,63 +77,76 @@ bool RLEventLayouts::setup() {
 
             // creator label
             auto creatorLabel = CCLabelBMFont::create("", "goldFont.fnt");
-            creatorLabel->setPosition({80.f, 6.f});
             creatorLabel->setAnchorPoint({0.f, 0.5f});
             creatorLabel->setScale(0.6f);
-            container->addChild(creatorLabel);
+            auto creatorItem = CCMenuItemSpriteExtra::create(creatorLabel, this, menu_selector(RLEventLayouts::onCreatorClicked));
+            creatorItem->setTag(0);
+            creatorItem->setAnchorPoint({0.f, 0.5f});
+            creatorItem->setPosition({55.f, 22.f});
+            // create a menu for this creatorItem and add it to the container
+            auto creatorMenu = CCMenu::create();
+            creatorMenu->setPosition({0, 0});
+            creatorMenu->addChild(creatorItem);
+            container->addChild(creatorMenu, 2);
             m_sections[i].creatorLabel = creatorLabel;
+            m_sections[i].creatorButton = creatorItem;
 
             // timer label on right side
-            auto timerLabel = CCLabelBMFont::create("--:--:--:--", "bigFont.fnt");
+            auto timerLabel = CCLabelBMFont::create("--:--:--:--", "goldFont.fnt");
             timerLabel->setPosition({cellW - 30.f, 22.f});
             timerLabel->setAnchorPoint({1.f, 0.5f});
-            timerLabel->setScale(0.5f);
+            timerLabel->setScale(0.3f);
             container->addChild(timerLabel);
             m_sections[i].timerLabel = timerLabel;
 
             // difficulty sprite
             auto diffSprite = GJDifficultySprite::create(0, GJDifficultyName::Short);
-            diffSprite->setPosition({30.f, 22.f});
+            diffSprite->setPosition({30, cellH / 2});
             diffSprite->setScale(0.8f);
             container->addChild(diffSprite);
             m_sections[i].diff = diffSprite;
       }
 
-      m_mainLayer->addChild(m_eventMenu);
       this->scheduleUpdate();
 
       // Fetch event info from server
-      web::WebRequest().get("https://gdrate.arcticwoof.xyz/getEvent").listen([this](web::WebResponse* res) {
-            if (!res || !res->ok()) {
-                  Notification::create("Failed to fetch event info", NotificationIcon::Error)->show();
-                  return;
-            }
-            auto jsonResult = res->json();
-            if (!jsonResult) {
-                  Notification::create("Invalid event JSON", NotificationIcon::Warning)->show();
-                  return;
-            }
-            auto json = jsonResult.unwrap();
+      {
+            Ref<RLEventLayouts> selfRef = this;
+            web::WebRequest().get("https://gdrate.arcticwoof.xyz/getEvent").listen([selfRef](web::WebResponse* res) {
+                  if (!selfRef) return;  // popup was destroyed
+                  if (!res || !res->ok()) {
+                        Notification::create("Failed to fetch event info", NotificationIcon::Error)->show();
+                        return;
+                  }
+                  auto jsonResult = res->json();
+                  if (!jsonResult) {
+                        Notification::create("Invalid event JSON", NotificationIcon::Warning)->show();
+                        return;
+                  }
+                  auto json = jsonResult.unwrap();
 
-            std::vector<std::string> keys = {"daily", "weekly", "monthly"};
-            for (int idx = 0; idx < 3; ++idx) {
-                  const auto& key = keys[idx];
-                  if (!json.contains(key)) continue;
-                  auto obj = json[key];
-                  auto levelIdValue = obj["levelId"].as<int>();
-                  if (!levelIdValue) continue;
-                  auto levelId = levelIdValue.unwrap();
+                  std::vector<std::string> keys = {"daily", "weekly", "monthly"};
+                  for (int idx = 0; idx < 3; ++idx) {
+                        const auto& key = keys[idx];
+                        if (!json.contains(key)) continue;
+                        auto obj = json[key];
+                        auto levelIdValue = obj["levelId"].as<int>();
+                        if (!levelIdValue) continue;
+                        auto levelId = levelIdValue.unwrap();
 
-                  m_sections[idx].levelId = levelId;
-                  m_sections[idx].secondsLeft = obj["secondsLeft"].as<int>().unwrapOrDefault();
+                        if (idx < 0 || idx >= 3) continue;  // safety bounds check
 
-                  auto levelName = obj["levelName"].as<std::string>().unwrapOrDefault();
-                  auto creator = obj["creator"].as<std::string>().unwrapOrDefault();
-                  auto difficulty = obj["difficulty"].as<int>().unwrapOrDefault();
+                        selfRef->m_sections[idx].levelId = levelId;
+                        selfRef->m_sections[idx].secondsLeft = obj["secondsLeft"].as<int>().unwrapOrDefault();
 
-                  // update UI
-                  auto sec = &m_sections[idx];
-                  if (sec->container) {
+                        auto levelName = obj["levelName"].as<std::string>().unwrapOrDefault();
+                        auto creator = obj["creator"].as<std::string>().unwrapOrDefault();
+                        auto difficulty = obj["difficulty"].as<int>().unwrapOrDefault();
+                        auto accountId = obj["accountId"].as<int>().unwrapOrDefault();
+
+                        // update UI
+                        auto sec = &selfRef->m_sections[idx];
+                        if (!sec || !sec->container) continue;
                         auto nameLabel = sec->levelNameLabel;
                         auto creatorLabel = sec->creatorLabel;
                         if (nameLabel) nameLabel->setString(levelName.c_str());
@@ -154,11 +154,15 @@ bool RLEventLayouts::setup() {
                         if (sec->diff) {
                               sec->diff->updateDifficultyFrame(getDifficulty(difficulty), GJDifficultyName::Short);
                         }
-                        // set current timer value text
+                        sec->accountId = accountId;
+                        if (sec->creatorButton) {
+                              sec->creatorButton->setTag(accountId);
+                              sec->creatorButton->setPosition({55.f, 22.f});
+                        }
                         if (sec->timerLabel) sec->timerLabel->setString(formatTime((long)sec->secondsLeft).c_str());
                   }
-            }
-      });
+            });
+      }
 
       return true;
 }
@@ -229,4 +233,13 @@ static int getDifficulty(int numerator) {
                   difficultyLevel = 0;
       }
       return difficultyLevel;
+}
+
+void RLEventLayouts::onCreatorClicked(CCObject* sender) {
+      if (!m_mainLayer) return;
+      auto menuItem = static_cast<CCMenuItem*>(sender);
+      if (!menuItem) return;
+      int accountId = menuItem->getTag();
+      if (accountId <= 0) return;
+      ProfilePage::create(accountId, false)->show();
 }
