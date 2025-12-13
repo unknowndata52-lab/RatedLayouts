@@ -19,6 +19,9 @@ class RLEventLayouts : public geode::Popup<> {
             CCLabelBMFont* levelNameLabel = nullptr;
             CCLabelBMFont* creatorLabel = nullptr;
             CCMenuItem* creatorButton = nullptr;
+            CCLabelBMFont* difficultyValueLabel = nullptr;
+            CCSprite* starIcon = nullptr;
+            CCSprite* featuredIcon = nullptr;
             int accountId = -1;
             int levelId = -1;
             int featured = 0;

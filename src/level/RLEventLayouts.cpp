@@ -75,6 +75,24 @@ bool RLEventLayouts::setup() {
             container->addChild(levelNameLabel);
             m_sections[i].levelNameLabel = levelNameLabel;
 
+            // difficulty value label
+            auto difficultyValueLabel = CCLabelBMFont::create("-", "bigFont.fnt");
+            difficultyValueLabel->setAnchorPoint({0.f, 0.5f});
+            difficultyValueLabel->setScale(0.35f);
+            difficultyValueLabel->setPosition({levelNameLabel->getPositionX() + levelNameLabel->getContentSize().width * levelNameLabel->getScaleX() + 12.f, 43.f});
+            container->addChild(difficultyValueLabel);
+            m_sections[i].difficultyValueLabel = difficultyValueLabel;
+
+            // star icon (to the right of difficulty value)
+            auto starIcon = CCSprite::create("rlStarIcon.png"_spr);
+            if (starIcon) {
+                  starIcon->setAnchorPoint({0.f, 0.5f});
+                  starIcon->setScale(0.8f);
+                  starIcon->setPosition({difficultyValueLabel->getPositionX() + difficultyValueLabel->getContentSize().width * difficultyValueLabel->getScaleX() - 2.f, difficultyValueLabel->getPositionY()});
+                  container->addChild(starIcon);
+            }
+            m_sections[i].starIcon = starIcon;
+
             // create a menu for this creatorItem and add it to the container
             auto creatorMenu = CCMenu::create();
             creatorMenu->setPosition({0, 0});
@@ -99,10 +117,10 @@ bool RLEventLayouts::setup() {
 
             // timer label on right side
             std::vector<std::string> timerPrefixes = {"Next Daily in ", "Next Weekly in ", "Next Monthly in "};
-            auto timerLabel = CCLabelBMFont::create((timerPrefixes[i] + "--:--:--:--").c_str(), "goldFont.fnt");
+            auto timerLabel = CCLabelBMFont::create((timerPrefixes[i] + "--:--:--:--").c_str(), "bigFont.fnt");
             timerLabel->setPosition({cellW - 5.f, 10.f});
             timerLabel->setAnchorPoint({1.f, 0.5f});
-            timerLabel->setScale(0.3f);
+            timerLabel->setScale(0.25f);
             container->addChild(timerLabel);
             m_sections[i].timerLabel = timerLabel;
 
@@ -159,19 +177,48 @@ bool RLEventLayouts::setup() {
                         auto creatorLabel = sec->creatorLabel;
                         if (nameLabel) nameLabel->setString(levelName.c_str());
                         if (creatorLabel) creatorLabel->setString(("By " + creator).c_str());
-                        if (sec->diff) {
-                              sec->diff->updateDifficultyFrame(getDifficulty(difficulty), GJDifficultyName::Short);
 
-                              // featured/epic coin
+                        // dynamically position difficulty value and star based on scaled widths
+                        if (nameLabel && sec->difficultyValueLabel) {
+                              float nameRightX = nameLabel->getPositionX() + nameLabel->getContentSize().width * nameLabel->getScaleX();
+                              float diffX = nameRightX + 12.f;
+                              sec->difficultyValueLabel->setString(std::to_string(difficulty).c_str());
+                              sec->difficultyValueLabel->setPosition({diffX, nameLabel->getPositionY()});
+
+                              // compute width of difficulty label after setting text
+                              float diffWidth = sec->difficultyValueLabel->getContentSize().width * sec->difficultyValueLabel->getScaleX();
+
+                              // position star icon to the right
+                              if (sec->starIcon) {
+                                    sec->starIcon->setPosition({diffX + diffWidth, nameLabel->getPositionY()});
+                              }
+                        }
+                        if (sec->diff) {
+                              sec->diff->updateDifficultyFrame(getDifficulty(difficulty), GJDifficultyName::Long);
+
+                              // featured/epic coin (place on diff sprite)
                               if (featured == 1 || featured == 2) {
                                     sec->featured = featured;
-                                    const char* coinSprite = (featured == 1) ? "GJ_featuredCoin_001.png" : "GJ_epicCoin_001.png";
-                                    auto coinIcon = CCSprite::createWithSpriteFrameName(coinSprite);
+                                    const char* coinSprite = (featured == 1) ? "rlfeaturedCoin.png"_spr : "rlepicFeaturedCoin.png"_spr;
+
+                                    // remove old featured icon if exists
+                                    if (sec->featuredIcon) {
+                                          sec->featuredIcon->removeFromParent();
+                                          sec->featuredIcon = nullptr;
+                                    }
+
+                                    auto coinIcon = CCSprite::create(coinSprite);
                                     if (coinIcon) {
-                                          coinIcon->setPosition({sec->diff->getContentSize().width - 5.f, sec->diff->getContentSize().height - 5.f});
-                                          coinIcon->setScale(0.6f);
-                                          coinIcon->setZOrder(10);
+                                          coinIcon->setPosition({sec->diff->getContentSize().width / 2.f, sec->diff->getContentSize().height / 2.f});
+                                          coinIcon->setZOrder(-1);
                                           sec->diff->addChild(coinIcon);
+                                          sec->featuredIcon = coinIcon;
+                                    }
+                              } else {
+                                    if (sec->featuredIcon) {
+                                          sec->featuredIcon->removeFromParent();
+                                          sec->featuredIcon = nullptr;
+                                          sec->featured = 0;
                                     }
                               }
                         }
