@@ -6,7 +6,7 @@ This mod intergretes with the current rating system and improved <cr>Demon Ratin
 
 <cr>**Platformers and Official Rated Levels won't be included!**</c>
 
-<co>You can find the list of Rated Layouts at the Quick Search Menu on the Search Tab. (Next Page) or bottom left of the Creator Layer</c>
+<co>**You can find the Rated Layouts by clicking the Blue star button at the bottom left of the Creator Layer or Level Search Layer!**</c>
 
 ## Features
 

@@ -149,10 +149,10 @@ bool RLLeaderboardLayer::init() {
 void RLLeaderboardLayer::onInfoButton(CCObject* sender) {
       MDPopup::create(
           "Rated Layouts Leaderboard",
-          "The leaderboard shows the top players in <cb>Rated Layouts</cb> based "
-          "on <cl>Stars</cl> or <cl>Creator Points</cl>. You can view each category by selecting the tabs.\n\n"
-          "<cl>Blueprint Stars</cl> are earned by completing a <cb>Rated Layouts</cb> level and are only counted when beaten legitimately. Any <cr>unfair</cr> means of obtaining these stars will result in a exclusion from the leaderboard.\n\n"
-          "<cl>Blueprint Creator Points</cl> are earned based on the how many rated layouts levels you have in your account. Getting a rated layout level earns you 1 point and getting a <cy>featured rated layout</cy> level earns you 2 points.",
+          "The leaderboard shows the top players in <cb>Rated Layouts</c> based "
+          "on <cl>Stars</c> or <cl>Creator Points</c>. You can view each category by selecting the tabs.\n\n"
+          "<cl>Blueprint Stars</c> are earned by completing a <cb>Rated Layouts</c> level and are only counted when beaten legitimately. Any <cr>unfair</c> means of obtaining these stars will result in an exclusion from the leaderboard.\n\n"
+          "<cl>Blueprint Creator Points</c> are earned based on the how many rated layouts levels you have in your account. Getting a rated layout level earns you 1 point and getting a <cy>featured rated layout</cy> level earns you 2 points.",
           "OK")
           ->show();
 }
@@ -360,7 +360,7 @@ void RLLeaderboardLayer::populateLeaderboard(
             cell->addChild(buttonMenu);
 
             auto scoreLabelText =
-                CCLabelBMFont::create(fmt::format("{}", score).c_str(), "bigFont.fnt");
+                CCLabelBMFont::create(fmt::format("{}", GameToolbox::pointsToString(score)).c_str(), "bigFont.fnt");
             scoreLabelText->setScale(0.5f);
             scoreLabelText->setPosition({320.f, 20.f});
             scoreLabelText->setAnchorPoint({1.f, 0.5f});

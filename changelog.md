@@ -2,6 +2,11 @@
 
 - Fixed bug where Layout Admins can't submit featured score for Epic Layouts.
 - Fixed bug where comments text color on non-compact mode was not applied correctly.
+- Fixed issue where Blueprint Stars isn't showing the correct amount at the Garage Layer.
+- Fixed issue where users who has [Comment Emojis Reloaded](mod:prevter.comment_emojis) mod installed can't see Mods/Admins colored comments.
+- Fixed issue where the Blueprint Stars label is overflowing outside the container in the Profile Page. (Looks nice for those who has 1000+ stars now!)
+- Added Stars value formatting. *(Now it shows 1,234 instead of 1234)*
+- Added Rated Layout Button at the Level Search Layer.
 
 # v0.2.5-beta.1
 

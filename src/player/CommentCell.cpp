@@ -113,9 +113,16 @@ class $modify(RLCommentCell, CommentCell) {
 
             log::debug("Applying comment text color for role: {} in {} mode", m_fields->role, m_compactMode ? "compact" : "non-compact");
 
+            // check for prevter.comment_emojis custom text area first (comment reloaded mod)
+            if (auto emojiTextArea = m_mainLayer->getChildByIDRecursive("prevter.comment_emojis/comment-text-area")) {
+                  log::debug("using comment emoji text area, applying color");
+                  if (auto label = typeinfo_cast<CCLabelBMFont*>(emojiTextArea)) {
+                        label->setColor(color);
+                  }
+            }
             // apply the color to the comment text label
-            if (auto commentTextLabel = typeinfo_cast<CCLabelBMFont*>(
-                    m_mainLayer->getChildByIDRecursive("comment-text-label"))) {  // compact mode (easy face mode)
+            else if (auto commentTextLabel = typeinfo_cast<CCLabelBMFont*>(
+                         m_mainLayer->getChildByIDRecursive("comment-text-label"))) {  // compact mode (easy face mode)
                   log::debug("Found comment-text-label, applying color");
                   commentTextLabel->setColor(color);
             } else if (auto textArea = m_mainLayer->getChildByIDRecursive("comment-text-area")) {  // non-compact mode is ass (extreme demon face)
@@ -124,7 +131,7 @@ class $modify(RLCommentCell, CommentCell) {
                   if (children && children->count() > 0) {
                         auto child = static_cast<CCNode*>(children->objectAtIndex(0));
                         if (auto multilineFont = typeinfo_cast<MultilineBitmapFont*>(child)) {
-                              log::debug("Found MultilineBitmapFont, applying color to nested CCLabelBMFont children");
+                              log::debug("Found MultilineBitmapFont, applying color");
                               auto multilineChildren = multilineFont->getChildren();
                               if (multilineChildren) {
                                     for (std::size_t i = 0; i < multilineChildren->count(); ++i) {
@@ -240,7 +247,7 @@ class $modify(RLCommentCell, CommentCell) {
       }
       void onOwnerBadge(CCObject* sender) {
             FLAlertLayer::create(
-                "Rated Layout Creator",
+                "Rated Layouts Creator",
                 "<cf>ArcticWoof</c> is the <ca>Creator and Developer</c> of <cl>Rated Layouts</c> Geode Mod.\nHe controls and manages everything within <cl>Rated Layouts</c>, including updates and adding new features as well as the ability to <cg>promote users to Layout Moderators or Administrators</c>.",
                 "OK")
                 ->show();

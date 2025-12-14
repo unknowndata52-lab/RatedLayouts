@@ -102,7 +102,7 @@ void RLStarsTotalPopup::buildDifficultyUI(const std::unordered_map<int, int>& co
                   sprite->setScale(1.0f);
                   m_difficultySprites.push_back(sprite);
 
-                  auto countLabel = CCLabelBMFont::create(numToString(total).c_str(), "goldFont.fnt");
+                  auto countLabel = CCLabelBMFont::create(numToString(GameToolbox::pointsToString(total)).c_str(), "goldFont.fnt");
                   countLabel->setScale(0.6f);
                   countLabel->setAnchorPoint({0.5f, 0.5f});
                   m_countLabels.push_back(countLabel);
@@ -215,7 +215,7 @@ bool RLStarsTotalPopup::setup() {
                 for (auto const& kv : counts) {
                       totalCount += kv.second;
                 }
-                thisRef->setTitle((std::string("Rated Layouts Classic: ") + numToString(totalCount)).c_str());
+                thisRef->setTitle((std::string("Rated Layouts Classic: ") + numToString(GameToolbox::pointsToString(totalCount))).c_str());
                 // remove loading label
                 if (thisRef->m_resultsLabel) {
                       thisRef->m_resultsLabel->removeFromParent();

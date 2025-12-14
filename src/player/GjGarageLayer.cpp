@@ -9,6 +9,7 @@ using namespace geode::prelude;
 class $modify(GJGarageLayer) {
       struct Fields {
             CCNode* myStatItem = nullptr;
+            CCNode* statMenu = nullptr;
             int storedStars = 0;
       };
 
@@ -16,21 +17,11 @@ class $modify(GJGarageLayer) {
             if (!GJGarageLayer::init())
                   return false;
 
+            // keep a reference to the stat menu; we'll populate it once we have profile data
+            m_fields->statMenu = this->getChildByID("capeling.garage-stats-menu/stats-menu");
+
+            // start fetching profile data; we'll create the stat item in the callback
             fetchProfileData(GJAccountManager::get()->m_accountID);
-
-            auto statMenu = this->getChildByID("capeling.garage-stats-menu/stats-menu");
-
-            auto starSprite = CCSprite::create("rlStarIconMed.png"_spr);
-            auto myStatItem = StatsDisplayAPI::getNewItem(
-                "blueprint-stars"_spr, starSprite,
-                m_fields->storedStars, 0.54f);
-
-            m_fields->myStatItem = myStatItem;
-
-            if (statMenu) {
-                  statMenu->addChild(myStatItem);
-                  statMenu->updateLayout();
-            }
 
             return true;
       }
@@ -89,10 +80,31 @@ class $modify(GJGarageLayer) {
                   int stars = json["stars"].asInt().unwrapOrDefault();
 
                   log::info("Profile data - points: {}, stars: {}", points, stars);
-                  // store the values into the saved value
-                  Mod::get()->setSavedValue("stars", stars);
-                  Mod::get()->setSavedValue("points", points);
                   m_fields->storedStars = stars;
+
+                  // create/update the stat item now that we have the value
+                  log::debug("Updating stat item with {} stars", stars);
+                  if (m_fields->statMenu) {
+                        // if an existing stat item exists, remove it first
+                        if (m_fields->myStatItem) {
+                              m_fields->myStatItem->removeFromParent();
+                              m_fields->myStatItem = nullptr;
+                        }
+
+                        auto starSprite = CCSprite::create("rlStarIconMed.png"_spr);
+                        auto myStatItem = StatsDisplayAPI::getNewItem(
+                            "blueprint-stars"_spr, starSprite,
+                            m_fields->storedStars, 0.54f);
+
+                        m_fields->myStatItem = myStatItem;
+                        m_fields->statMenu->addChild(myStatItem);
+                        // call updateLayout if available
+                        if (auto menu = typeinfo_cast<CCMenu*>(m_fields->statMenu)) {
+                              menu->updateLayout();
+                        }
+                  } else {
+                        log::warn("Stat menu not found; cannot display blueprint-stars stat");
+                  }
             });
       }
 };

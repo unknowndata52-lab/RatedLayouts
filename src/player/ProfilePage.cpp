@@ -66,9 +66,16 @@ class $modify(RLProfilePage, ProfilePage) {
                           .7f,
                           .1f);  // geode limit node size thingy blep
 
+            // Ensure label fits inside max width (50.f)
+            const float maxWidth = 50.f;
+            float origWidth = blueprintStarsCount->getContentSize().width;
+            float currentScale = blueprintStarsCount->getScaleX();
+            float desiredScale = std::min(currentScale, maxWidth / std::max(1.0f, origWidth));
+            blueprintStarsCount->setScale(desiredScale);
+
             auto container = CCNode::create();
-            float bsWidth = blueprintStarsCount->getContentSize().width * blueprintStarsCount->getScaleX();
-            if (bsWidth > 50.f) bsWidth = 50.f;
+            float bsWidth = origWidth * blueprintStarsCount->getScaleX();
+            if (bsWidth > maxWidth) bsWidth = maxWidth;
             container->setContentSize({bsWidth, 19.5f});
             container->setID("blueprint-stars-container");
 
@@ -80,17 +87,17 @@ class $modify(RLProfilePage, ProfilePage) {
                   auto blueprintSprite = CCSprite::create("rlStarIconMed.png"_spr);
                   if (blueprintSprite) {
                         blueprintSprite->setScale(1.0f);
-                                    auto blueprintButton = CCMenuItemSpriteExtra::create(
-                                          blueprintSprite, this, menu_selector(RLProfilePage::onBlueprintStars));
-                                    blueprintButton->setID("blueprint-stars-icon");
-                                    if (auto statsMenuAsMenu = typeinfo_cast<CCMenu*>(statsMenu)) {
-                                            statsMenuAsMenu->addChild(blueprintButton);
-                                    } else {
-                                            auto btnMenu = CCMenu::create();
-                                            btnMenu->setPosition({0, 0});
-                                            btnMenu->addChild(blueprintButton);
-                                            statsMenu->addChild(btnMenu);
-                                    }
+                        auto blueprintButton = CCMenuItemSpriteExtra::create(
+                            blueprintSprite, this, menu_selector(RLProfilePage::onBlueprintStars));
+                        blueprintButton->setID("blueprint-stars-icon");
+                        if (auto statsMenuAsMenu = typeinfo_cast<CCMenu*>(statsMenu)) {
+                              statsMenuAsMenu->addChild(blueprintButton);
+                        } else {
+                              auto btnMenu = CCMenu::create();
+                              btnMenu->setPosition({0, 0});
+                              btnMenu->addChild(blueprintButton);
+                              statsMenu->addChild(btnMenu);
+                        }
                   }
             }
 
@@ -195,15 +202,22 @@ class $modify(RLProfilePage, ProfilePage) {
 
                   // label stuff
                   auto blueprintStarsCount =
-                      CCLabelBMFont::create(numToString(stars).c_str(), "bigFont.fnt");
+                      CCLabelBMFont::create(numToString(GameToolbox::pointsToString(stars)).c_str(), "bigFont.fnt");
                   blueprintStarsCount->setID("label");
                   blueprintStarsCount->setAnchorPoint({1.f, .5f});
                   limitNodeSize(blueprintStarsCount,
                                 {blueprintStarsCount->getContentSize()}, .7f, .1f);
 
+                  // Ensure label fits inside max width (50.f)
+                  const float maxWidth = 50.f;
+                  float origWidth = blueprintStarsCount->getContentSize().width;
+                  float currentScale = blueprintStarsCount->getScaleX();
+                  float desiredScale = std::min(currentScale, maxWidth / std::max(1.0f, origWidth));
+                  blueprintStarsCount->setScale(desiredScale);
+
                   auto container = CCNode::create();
-                  float bsWidth = blueprintStarsCount->getContentSize().width * blueprintStarsCount->getScaleX();
-                  if (bsWidth > 50.f) bsWidth = 50.f;
+                  float bsWidth = origWidth * blueprintStarsCount->getScaleX();
+                  if (bsWidth > maxWidth) bsWidth = maxWidth;
                   container->setContentSize({bsWidth, 19.5f});
                   container->setID("blueprint-stars-container");
                   container->addChildAtPosition(blueprintStarsCount, Anchor::Right);
@@ -228,15 +242,22 @@ class $modify(RLProfilePage, ProfilePage) {
 
                   if (points > 0) {
                         auto layoutPointsCount =
-                            CCLabelBMFont::create(numToString(points).c_str(), "bigFont.fnt");
+                            CCLabelBMFont::create(numToString(GameToolbox::pointsToString(points)).c_str(), "bigFont.fnt");
                         layoutPointsCount->setID("label");
                         layoutPointsCount->setAnchorPoint({1.f, .5f});
                         limitNodeSize(layoutPointsCount, {layoutPointsCount->getContentSize()},
                                       .7f, .1f);
 
+                        // Ensure layout points label fits inside max width (50.f)
+                        const float maxWidth = 50.f;
+                        float origLpWidth = layoutPointsCount->getContentSize().width;
+                        float currentLpScale = layoutPointsCount->getScaleX();
+                        float desiredLpScale = std::min(currentLpScale, maxWidth / std::max(1.0f, origLpWidth));
+                        layoutPointsCount->setScale(desiredLpScale);
+
                         auto layoutContainer = CCNode::create();
-                        float lpWidth = layoutPointsCount->getContentSize().width * layoutPointsCount->getScaleX();
-                        if (lpWidth > 50.f) lpWidth = 50.f;
+                        float lpWidth = origLpWidth * layoutPointsCount->getScaleX();
+                        if (lpWidth > maxWidth) lpWidth = maxWidth;
                         layoutContainer->setContentSize({lpWidth, 19.5f});
                         layoutContainer->setID("layout-points-container");
                         layoutContainer->addChildAtPosition(layoutPointsCount, Anchor::Right);
@@ -355,7 +376,7 @@ class $modify(RLProfilePage, ProfilePage) {
       }
       void onOwnerBadge(CCObject* sender) {
             FLAlertLayer::create(
-                "Rated Layout Creator",
+                "Rated Layouts Creator",
                 "<cf>ArcticWoof</c> is the <ca>Creator and Developer</c> of <cl>Rated Layouts</c> Geode Mod.\nHe controls and manages everything within <cl>Rated Layouts</c>, including updates and adding new features as well as the ability to <cg>promote users to Layout Moderators or Administrators</c>.",
                 "OK")
                 ->show();

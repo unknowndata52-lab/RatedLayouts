@@ -290,12 +290,12 @@ void RLEventLayouts::onInfo(CCObject* sender) {
       MDPopup::create(
           "Event Layouts",
           "Play <cg>daily</c>, <cy>weekly</c>, and <cp>monthly</c> rated layouts curated by the <cr>Layout Admins.</c>\n\n"
-          "Each layout features a <cb>unique selection</c> of levels handpicked for their <co>design and quality!</c>\n\n"
+          "Each layout features a <cb>unique selection</c> of levels handpicked for their <co>gameplay and layout design!</c>\n\n"
           "### <co>Daily Layouts</c> refresh every 24 hours, <cy>Weekly Layouts</c> every 7 days, and <cp>Monthly Layouts</c> every 30 days.\n\n"
           "\r\n\r\n---\r\n\r\n"
-          "- <cg>**Daily Layouts**</c> showcase easy layouts *(mostly levels from 2-9 stars)* for you to grind and play various layouts\n\n"
-          "- <cy>**Weekly Layouts**</c> offer a bit more <cr>challenge</c> *(Easy to Hard Demons)*\n\n"
-          "- <cp>**Monthly Layouts**</c> hold special events like <cl>Verification Bounties</c> and other special activities.\n\n",
+          "- <cg>**Daily Layout**</c> showcase <cl>easy layouts</c> *(Easy to Insane Difficulty)* for you to grind and play various layouts\n"
+          "- <cy>**Weekly Layout**</c> offer a bit more <cr>challenging layouts</c> *(Easy to Hard Demons Difficulty)*\n"
+          "- <cp>**Monthly Layout**</c> shows special events/themed layouts like <cl>Verification Bounties</c> and other special activities.\n",
           "OK")
           ->show();
 }
