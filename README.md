@@ -21,6 +21,7 @@ This mod intergretes with the current rating system and improved <cr>Demon Ratin
 - **Leaderboard Integration**: Compete with other players on leaderboards for the most Blueprint Stars and Blueprint Creator Points!
 - **Event Rated Layout Levels**: New daily, weekly and monthly rated layout levels to showcase!
 - **Custom Search Filters**: Easily search for rated layout levels using various filters such as difficulty, level type, and more!
+- **Community Voting System**: Players can vote on suggested layouts based on design, difficulty, and gameplay.
 
 ## Up-coming Features
 

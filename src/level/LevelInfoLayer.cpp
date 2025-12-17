@@ -4,6 +4,7 @@
 #include <argon/argon.hpp>
 
 #include "ModRatePopup.hpp"
+#include "RLCommunityVotePopup.hpp"
 
 using namespace geode::prelude;
 
@@ -216,6 +217,70 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                               CCNode* difficultySprite) {
             int difficulty = json["difficulty"].asInt().unwrapOrDefault();
             int featured = json["featured"].asInt().unwrapOrDefault();
+            bool isSuggested = json["isSuggested"].asBool().unwrapOrDefault();
+
+            // helper to remove existing button from play or left menus
+            auto removeExistingCommunityBtn = [layerRef]() {
+                  auto playMenuNode = layerRef->getChildByID("play-menu");
+                  if (playMenuNode && typeinfo_cast<CCMenu*>(playMenuNode)) {
+                        auto existing = static_cast<CCMenu*>(playMenuNode)->getChildByID("rl-community-vote");
+                        if (existing) existing->removeFromParent();
+                  }
+                  auto leftMenuNode = layerRef->getChildByID("left-side-menu");
+                  if (leftMenuNode && typeinfo_cast<CCMenu*>(leftMenuNode)) {
+                        auto existing = static_cast<CCMenu*>(leftMenuNode)->getChildByID("rl-community-vote");
+                        if (existing) existing->removeFromParent();
+                  }
+            };
+
+            if (isSuggested) {
+                  // create button if not already present
+                  bool exists = false;
+                  auto playMenuNode = layerRef->getChildByID("play-menu");
+                  if (playMenuNode && typeinfo_cast<CCMenu*>(playMenuNode)) {
+                        if (static_cast<CCMenu*>(playMenuNode)->getChildByID("rl-community-vote"))
+                              exists = true;
+                  }
+
+                  if (!exists) {
+                        // determine whether we can use the level's percentage fields
+                        int normalPct = -1;
+                        int practicePct = -1;
+                        bool hasPctFields = false;
+
+                        if (layerRef && layerRef->m_level) {
+                              hasPctFields = true;
+                              normalPct = layerRef->m_level->m_normalPercent;
+                              practicePct = layerRef->m_level->m_practicePercent;
+                        }
+
+                        bool shouldDisable = true;
+                        if (hasPctFields) {
+                              shouldDisable = !(normalPct >= 20 || practicePct >= 80);
+                        }
+
+                        auto commSprite = shouldDisable ? CCSpriteGrayscale::create("RL_commVote01.png"_spr) : CCSprite::create("RL_commVote01.png"_spr);
+                        if (commSprite) {
+                              auto commBtnSpr = CircleButtonSprite::create(commSprite, shouldDisable ? CircleBaseColor::Gray : CircleBaseColor::Green, CircleBaseSize::Medium);
+                              auto commBtnItem = CCMenuItemSpriteExtra::create(commBtnSpr, layerRef, menu_selector(RLLevelInfoLayer::onCommunityVote));
+                              commBtnItem->setID("rl-community-vote");
+
+                              if (playMenuNode && typeinfo_cast<CCMenu*>(playMenuNode)) {
+                                    auto playMenu = static_cast<CCMenu*>(playMenuNode);
+                                    commBtnItem->setPosition({-55.f, 20.f});
+                                    playMenu->addChild(commBtnItem);
+                              } else {
+                                    auto leftMenuNode = layerRef->getChildByID("left-side-menu");
+                                    if (leftMenuNode && typeinfo_cast<CCMenu*>(leftMenuNode)) {
+                                          static_cast<CCMenu*>(leftMenuNode)->addChild(commBtnItem);
+                                    }
+                              }
+                        }
+                  }
+            } else {
+                  // already rated / not suggested
+                  removeExistingCommunityBtn();
+            }
 
             // If no difficulty rating, remove from cache
             if (difficulty == 0) {
@@ -557,6 +622,67 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                                             Ref<RLLevelInfoLayer> layerRef) {
             int difficulty = json["difficulty"].asInt().unwrapOrDefault();
 
+            // handle community vote button visibility when level updates are fetched
+            bool isSuggested = json["isSuggested"].asBool().unwrapOrDefault();
+            auto removeExistingCommunityBtn = [layerRef]() {
+                  auto playMenuNode = layerRef->getChildByID("play-menu");
+                  if (playMenuNode && typeinfo_cast<CCMenu*>(playMenuNode)) {
+                        auto existing = static_cast<CCMenu*>(playMenuNode)->getChildByID("rl-community-vote");
+                        if (existing) existing->removeFromParent();
+                  }
+                  auto leftMenuNode = layerRef->getChildByID("left-side-menu");
+                  if (leftMenuNode && typeinfo_cast<CCMenu*>(leftMenuNode)) {
+                        auto existing = static_cast<CCMenu*>(leftMenuNode)->getChildByID("rl-community-vote");
+                        if (existing) existing->removeFromParent();
+                  }
+            };
+
+            if (isSuggested) {
+                  bool exists = false;
+                  auto playMenuNode = layerRef->getChildByID("play-menu");
+                  if (playMenuNode && typeinfo_cast<CCMenu*>(playMenuNode)) {
+                        if (static_cast<CCMenu*>(playMenuNode)->getChildByID("rl-community-vote")) exists = true;
+                  }
+                  if (!exists) {
+                        // determine whether we can use the level's percentage fields
+                        int normalPct = -1;
+                        int practicePct = -1;
+                        bool hasPctFields = false;
+
+                        if (layerRef && layerRef->m_level) {
+                              hasPctFields = true;
+                              normalPct = layerRef->m_level->m_normalPercent;
+                              practicePct = layerRef->m_level->m_practicePercent;
+                        }
+
+                        bool shouldDisable = true;
+                        if (hasPctFields) {
+                              shouldDisable = !(normalPct >= 20 || practicePct >= 80);
+                        }
+
+                        auto commSprite = shouldDisable ? CCSpriteGrayscale::create("RL_commVote01.png"_spr) : CCSprite::create("RL_commVote01.png"_spr);
+                        if (commSprite) {
+                              auto commBtnSpr = CircleButtonSprite::create(commSprite, shouldDisable ? CircleBaseColor::Gray : CircleBaseColor::Green, CircleBaseSize::Medium);
+                              auto commBtnItem = CCMenuItemSpriteExtra::create(commBtnSpr, layerRef, menu_selector(RLLevelInfoLayer::onCommunityVote));
+                              commBtnItem->setID("rl-community-vote");
+
+                              if (playMenuNode && typeinfo_cast<CCMenu*>(playMenuNode)) {
+                                    auto playMenu = static_cast<CCMenu*>(playMenuNode);
+                                    commBtnItem->setPosition({-55.f, 20.f});
+                                    playMenu->addChild(commBtnItem);
+
+                              } else {
+                                    auto leftMenuNode = layerRef->getChildByID("left-side-menu");
+                                    if (leftMenuNode && typeinfo_cast<CCMenu*>(leftMenuNode)) {
+                                          static_cast<CCMenu*>(leftMenuNode)->addChild(commBtnItem);
+                                    }
+                              }
+                        }
+                  }
+            } else {
+                  removeExistingCommunityBtn();
+            }
+
             // If no difficulty rating, remove from cache
             if (difficulty == 0) {
                   auto cachePath = getCachePath();
@@ -763,6 +889,28 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                       NotificationIcon::Error)
                       ->show();
             }
+      }
+
+      void onCommunityVote(CCObject* sender) {
+            int normalPct = this->m_level->m_normalPercent;
+            int practicePct = this->m_level->m_practicePercent;
+            bool shouldDisable = true;
+            shouldDisable = !(normalPct >= 20 || practicePct >= 80);
+            if (shouldDisable) {
+                  log::info("Community vote button clicked!");
+                  FLAlertLayer::create(
+                      "Insufficient Completion",
+                      "You need to have <co>completed</c> at least <cg>20% in </c>"
+                      "<cg>normal mode</c> or <cf>80% in practice mode</c> to access "
+                      "the <cb>Community Vote.</c>",
+                      "OK")
+                      ->show();
+                  return;
+            }
+            int levelId = 0;
+            if (this->m_level) levelId = this->m_level->m_levelID;
+            auto popup = RLCommunityVotePopup::create(levelId);
+            if (popup) popup->show();
       }
 
       // bruh
