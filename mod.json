@@ -42,11 +42,11 @@
 	], 
 	"incompatibilities": {
 		"uproxide.more_difficulties": {
-			"version": "*",
+			"version": ">=1.0.1",
 			"importance": "conflicting"
 		},
 		"hiimjustin000.demons_in_between": {
-			"version": "*",
+			"version": ">=1.0.1",
 			"importance": "conflicting"
 		}
 	},
