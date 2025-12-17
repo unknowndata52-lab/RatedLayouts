@@ -163,8 +163,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
 
       m_mainLayer->addChild(menuButtons);
 
-      // epic featured toggle (admin only, displayed next to featured toggle)
-      if (userRole == 2) {
+      if (userRole >= 1) {
             auto offEpicSprite = CCSpriteGrayscale::create("rlepicFeaturedCoin.png"_spr);
             auto onEpicSprite = CCSprite::create("rlepicFeaturedCoin.png"_spr);
             auto toggleEpicFeatured = CCMenuItemToggler::create(
@@ -252,22 +251,22 @@ void ModRatePopup::onInfoButton(CCObject* sender) {
             }
 
             auto json = jsonRes.unwrap();
-            int levelId = json["levelId"].asInt().unwrapOrDefault();
             double averageDifficulty =
                 json["averageDifficulty"].asDouble().unwrapOrDefault();
             int suggestedTotal = json["suggestedTotal"].asInt().unwrapOrDefault();
             int suggestedFeatured = json["suggestedFeatured"].asInt().unwrapOrDefault();
+            int suggestedEpic = json["suggestedEpic"].asInt().unwrapOrDefault();
             int featuredScore = json["featuredScore"].asInt().unwrapOrDefault();
 
             std::string infoText =
                 fmt::format(
-                    "Level ID: {}\n"
                     "Average Difficulty: {:.1f}\n"
                     "Total Suggested: {}\n"
                     "Total Suggested Featured: {}\n"
-                    "Featured Score: {}",
-                    levelId, averageDifficulty, suggestedTotal,
-                    suggestedFeatured, featuredScore);
+                    "Total Suggested Epic: {}\n"
+                    "Featured Score: {}\n",
+                    averageDifficulty, suggestedTotal,
+                    suggestedFeatured, suggestedEpic, featuredScore);
 
             FLAlertLayer::create("Level Status Info", infoText, "OK")->show();
       });

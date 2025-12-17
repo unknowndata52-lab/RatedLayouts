@@ -74,10 +74,24 @@ class $modify(EndLevelLayer) {
                   std::string argonToken =
                       Mod::get()->getSavedValue<std::string>("argon_token");
 
+                  // verification stuff
+                  int attempts = 0;
+                  int attemptTime = 0;
+                  if (auto playLayer = PlayLayer::get()) {
+                        if (playLayer->m_level) {
+                              attempts = playLayer->m_level->m_attempts;
+                              attemptTime = playLayer->m_level->m_attemptTime;
+                        }
+                  }
+
+                  log::debug("Submitting completion with attempts: {} time: {}", attempts, attemptTime);
+
                   matjson::Value jsonBody;
                   jsonBody["accountId"] = accountId;
                   jsonBody["argonToken"] = argonToken;
                   jsonBody["levelId"] = levelId;
+                  jsonBody["attempts"] = attempts;
+                  jsonBody["attemptTime"] = attemptTime;
 
                   auto submitReq = web::WebRequest();
                   submitReq.bodyJSON(jsonBody);
@@ -127,7 +141,7 @@ class $modify(EndLevelLayer) {
 
                               // make the stars reward pop when u complete the level
                               auto bigStarSprite =
-                                  CCSprite::create("rlStarIconBig.png"_spr);
+                                  CCSprite::create("RL_starBig.png"_spr);
                               bigStarSprite->setScale(1.f);
                               bigStarSprite->setPosition(
                                   {endLayerRef->m_mainLayer->getContentSize().width / 2 +
@@ -168,13 +182,13 @@ class $modify(EndLevelLayer) {
                                               numToString(displayStars).c_str());
                                           rewardLayer->m_stars = displayStars;
                                           rewardLayer->m_starsSprite =
-                                              CCSprite::create("rlStarIconMed.png"_spr);
+                                              CCSprite::create("RL_starMed.png"_spr);
 
                                           // Replace the main display sprite
                                           if (auto node = rewardLayer->m_mainNode
                                                               ->getChildByType<CCSprite*>(0)) {
                                                 node->setDisplayFrame(
-                                                    CCSprite::create("rlStarIconMed.png"_spr)
+                                                    CCSprite::create("RL_starMed.png"_spr)
                                                         ->displayFrame());
                                                 node->setScale(1.f);
                                           }
@@ -188,7 +202,7 @@ class $modify(EndLevelLayer) {
                                     log::info("Reward animation disabled");
                                     Notification::create("Received " +
                                                              numToString(starReward) + " stars!",
-                                                         CCSprite::create("rlStarIconMed.png"_spr), 2.f)
+                                                         CCSprite::create("RL_starMed.png"_spr), 2.f)
                                         ->show();
                                     FMODAudioEngine::sharedEngine()->playEffect(
                                         // @geode-ignore(unknown-resource)
@@ -200,10 +214,12 @@ class $modify(EndLevelLayer) {
                                     endLayerRef->addChild(fakeCircleWave, 1);
                               }
                         } else if (!success && responseStars == 0) {
-                              Notification::create(
-                                  "Stars already claimed for this level!",
-                                  NotificationIcon::Warning)
-                                  ->show();
+                              // Notification::create(
+                              //     "Stars already claimed for this level!",
+                              //     NotificationIcon::Warning)
+                              //     ->show();
+                              log::info("Stars already claimed for level ID: {}",
+                                        levelId);
                         }
                   });
             });

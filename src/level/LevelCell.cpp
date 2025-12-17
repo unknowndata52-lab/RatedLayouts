@@ -208,10 +208,9 @@ class $modify(LevelCell) {
             sprite->updateDifficultyFrame(difficultyLevel, GJDifficultyName::Short);
 
             // star icon
-            auto newStarIcon = CCSprite::create("rlStarIcon.png"_spr);
+            auto newStarIcon = CCSprite::create("RL_starSmall.png"_spr);
             if (newStarIcon) {
-                  newStarIcon->setPosition(
-                      {difficultySprite->getContentSize().width / 2 + 8, -8});
+                  newStarIcon->setPosition({difficultySprite->getContentSize().width / 2 + 8, -8});
                   newStarIcon->setScale(0.75f);
                   newStarIcon->setID("rl-star-icon");
                   difficultySprite->addChild(newStarIcon);

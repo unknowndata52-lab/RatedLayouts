@@ -130,11 +130,11 @@ class $modify(RLCommentCell, CommentCell) {
 
             ccColor3B color;
             if (accountId == 7689052) {
-                  color = ccc3(150, 255, 255);  // ArcticWoof
+                  color = {150, 255, 255};  // ArcticWoof
             } else if (m_fields->role == 1) {
-                  color = ccc3(0, 150, 255);  // mod comment color
+                  color = {156, 187, 255};  // mod comment color
             } else if (m_fields->role == 2) {
-                  color = ccc3(253, 106, 106);  // admin comment color
+                  color = {255, 187, 187};  // admin comment color
             }
 
             log::debug("Applying comment text color for role: {} in {} mode", m_fields->role, m_compactMode ? "compact" : "non-compact");
@@ -250,7 +250,7 @@ class $modify(RLCommentCell, CommentCell) {
             // Avoid creating duplicate badges if one already exists
             if (accountId == 7689052) {  // ArcticWoof
                   if (!userNameMenu->getChildByID("rl-comment-owner-badge")) {
-                        auto ownerBadgeSprite = CCSprite::create("rlBadgeOwner.png"_spr);
+                        auto ownerBadgeSprite = CCSprite::create("RL_badgeOwner.png"_spr);
                         ownerBadgeSprite->setScale(0.7f);
                         auto ownerBadgeButton = CCMenuItemSpriteExtra::create(
                             ownerBadgeSprite, this, menu_selector(RLCommentCell::onOwnerBadge));
@@ -259,7 +259,7 @@ class $modify(RLCommentCell, CommentCell) {
                   }
             } else if (m_fields->role == 1) {
                   if (!userNameMenu->getChildByID("rl-comment-mod-badge")) {
-                        auto modBadgeSprite = CCSprite::create("rlBadgeMod.png"_spr);
+                        auto modBadgeSprite = CCSprite::create("RL_badgeMod01.png"_spr);
                         modBadgeSprite->setScale(0.7f);
                         auto modBadgeButton = CCMenuItemSpriteExtra::create(
                             modBadgeSprite, this, menu_selector(RLCommentCell::onModBadge));
@@ -269,7 +269,7 @@ class $modify(RLCommentCell, CommentCell) {
                   }
             } else if (m_fields->role == 2) {
                   if (!userNameMenu->getChildByID("rl-comment-admin-badge")) {
-                        auto adminBadgeSprite = CCSprite::create("rlBadgeAdmin.png"_spr);
+                        auto adminBadgeSprite = CCSprite::create("RL_badgeAdmin01.png"_spr);
                         adminBadgeSprite->setScale(0.7f);
                         auto adminBadgeButton = CCMenuItemSpriteExtra::create(
                             adminBadgeSprite, this, menu_selector(RLCommentCell::onAdminBadge));
@@ -322,7 +322,7 @@ class $modify(RLCommentCell, CommentCell) {
                   glow->setAnchorPoint({0.195f, 0.5f});
                   glow->setPosition({100, 10});
                   glow->setColor({135, 180, 255});
-                  glow->setOpacity(150);
+                  glow->setOpacity(100);
                   glow->setRotation(90);
                   glow->setScaleX(0.725f);
                   glow->setScaleY(5.f);
@@ -331,7 +331,7 @@ class $modify(RLCommentCell, CommentCell) {
                   glow->setAnchorPoint({0.26f, 0.5f});
                   glow->setPosition({80, 4});
                   glow->setColor({135, 180, 255});
-                  glow->setOpacity(150);
+                  glow->setOpacity(100);
                   glow->setRotation(90);
                   glow->setScaleX(1.6f);
                   glow->setScaleY(7.f);

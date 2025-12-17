@@ -119,7 +119,7 @@ class $modify(RLProfilePage, ProfilePage) {
             statsMenu->addChild(container);
 
             if (!blueprintStars) {
-                  auto blueprintSprite = CCSprite::create("rlStarIconMed.png"_spr);
+                  auto blueprintSprite = CCSprite::create("RL_starMed.png"_spr);
                   if (blueprintSprite) {
                         blueprintSprite->setScale(1.0f);
                         auto blueprintButton = CCMenuItemSpriteExtra::create(
@@ -261,7 +261,7 @@ class $modify(RLProfilePage, ProfilePage) {
                   container->setAnchorPoint({1.f, .5f});
                   statsMenu->addChild(container);
 
-                  auto blueprintStars = CCSprite::create("rlStarIconMed.png"_spr);
+                  auto blueprintStars = CCSprite::create("RL_starMed.png"_spr);
                   if (blueprintStars) {
                         blueprintStars->setScale(1.0f);
                         auto blueprintButton = CCMenuItemSpriteExtra::create(
@@ -301,7 +301,7 @@ class $modify(RLProfilePage, ProfilePage) {
                         layoutContainer->setAnchorPoint({1.f, .5f});
                         statsMenu->addChild(layoutContainer);
 
-                        auto layoutIcon = CCSprite::create("rlhammerIcon.png"_spr);
+                        auto layoutIcon = CCSprite::create("RL_blueprintPoint01.png"_spr);
                         if (layoutIcon) {
                               layoutIcon->setID("layout-points-icon");
                               statsMenu->addChild(layoutIcon);
@@ -319,7 +319,7 @@ class $modify(RLProfilePage, ProfilePage) {
                         auto leftMenu = static_cast<CCMenu*>(
                             pageRef->m_mainLayer->getChildByIDRecursive("left-menu"));
                         if (leftMenu && !leftMenu->getChildByID("rl-user-manage")) {
-                              auto hammerSprite = CCSprite::create("rlhammerIcon.png"_spr);
+                              auto hammerSprite = CCSprite::create("RL_blueprintPoint01.png"_spr);
                               auto circleButtonSprite = CircleButtonSprite::create(
                                   hammerSprite, CircleBaseColor::DarkAqua, CircleBaseSize::Small);
                               circleButtonSprite->setScale(0.875f);
@@ -364,7 +364,7 @@ class $modify(RLProfilePage, ProfilePage) {
                   if (auto mod = userNameMenu->getChildByID("rl-mod-badge")) mod->removeFromParent();
                   if (auto admin = userNameMenu->getChildByID("rl-admin-badge")) admin->removeFromParent();
 
-                  auto ownerBadgeSprite = CCSprite::create("rlBadgeOwner.png"_spr);
+                  auto ownerBadgeSprite = CCSprite::create("RL_badgeOwner.png"_spr);
                   auto ownerBadgeButton = CCMenuItemSpriteExtra::create(
                       ownerBadgeSprite, this, menu_selector(RLProfilePage::onOwnerBadge));
                   ownerBadgeButton->setID("rl-owner-badge");
@@ -376,7 +376,7 @@ class $modify(RLProfilePage, ProfilePage) {
                   if (auto owner = userNameMenu->getChildByID("rl-owner-badge")) owner->removeFromParent();
                   if (auto admin = userNameMenu->getChildByID("rl-admin-badge")) admin->removeFromParent();
 
-                  auto modBadgeSprite = CCSprite::create("rlBadgeMod.png"_spr);
+                  auto modBadgeSprite = CCSprite::create("RL_badgeMod01.png"_spr);
                   auto modBadgeButton = CCMenuItemSpriteExtra::create(
                       modBadgeSprite, this, menu_selector(RLProfilePage::onModBadge));
 
@@ -390,7 +390,7 @@ class $modify(RLProfilePage, ProfilePage) {
                   }
                   if (auto owner = userNameMenu->getChildByID("rl-owner-badge")) owner->removeFromParent();
                   if (auto mod = userNameMenu->getChildByID("rl-mod-badge")) mod->removeFromParent();
-                  auto adminBadgeSprite = CCSprite::create("rlBadgeAdmin.png"_spr);
+                  auto adminBadgeSprite = CCSprite::create("RL_badgeAdmin01.png"_spr);
                   auto adminBadgeButton = CCMenuItemSpriteExtra::create(
                       adminBadgeSprite, this, menu_selector(RLProfilePage::onAdminBadge));
                   adminBadgeButton->setID("rl-admin-badge");

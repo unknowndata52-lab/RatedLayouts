@@ -13,10 +13,13 @@ class RLCreatorLayer : public CCLayer {
       void onLeaderboard(CCObject* sender);
       void onFeaturedLayouts(CCObject* sender);
       void onNewRated(CCObject* sender);
-      void onSendLayouts(CCObject* sender);
+      void onSentLayouts(CCObject* sender);
       void onInfoButton(CCObject* sender);
-      void onEventLayouts(CCObject* sender);
+      void onDailyLayouts(CCObject* sender);
+      void onWeeklyLayouts(CCObject* sender);
+      void onMonthlyLayouts(CCObject* sender);
       void onUnknownButton(CCObject* sender);
+      void onLayoutGauntlets(CCObject* sender);
       void onSearchLayouts(CCObject* sender);
       void onCreditsButton(CCObject* sender);
       void onSettingsButton(CCObject* sender);

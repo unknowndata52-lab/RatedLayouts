@@ -8,7 +8,7 @@
 	},
 	"id": "arcticwoof.rated_layouts",
 	"name": "Rated Layouts",
-	"version": "v0.2.6-beta.1",
+	"version": "v0.2.7-beta.1",
 	"developer": "ArcticWoof",
 	"description": "Play rated classic layout levels",
 	"resources": {
@@ -40,6 +40,16 @@
 		"enhancement",
 		"gameplay"
 	], 
+	"incompatibilities": {
+		"uproxide.more_difficulties": {
+			"version": "*",
+			"importance": "conflicting"
+		},
+		"hiimjustin000.demons_in_between": {
+			"version": "*",
+			"importance": "conflicting"
+		}
+	},
 	"settings": {
 		"disableBackground": {
 			"name": "Disable Moving Background",

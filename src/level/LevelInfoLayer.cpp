@@ -109,13 +109,13 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
 
             if (Mod::get()->getSavedValue<int>("role") == 1) {
                   // add a mod button
-                  auto iconSprite = CCSprite::create("rlStarIconBig.png"_spr);
+                  auto iconSprite = CCSprite::create("RL_starBig.png"_spr);
                   CCSprite* buttonSprite = nullptr;
 
                   if (isPlatformer || starRatings != 0) {
-                        buttonSprite = CCSpriteGrayscale::create("rlStarIconBig.png"_spr);
+                        buttonSprite = CCSpriteGrayscale::create("RL_starBig.png"_spr);
                   } else {
-                        buttonSprite = CCSprite::create("rlStarIconBig.png"_spr);
+                        buttonSprite = CCSprite::create("RL_starBig.png"_spr);
                   }
 
                   auto modButtonSpr = CircleButtonSprite::create(
@@ -131,9 +131,9 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                   CCSprite* buttonSprite = nullptr;
 
                   if (isPlatformer || starRatings != 0) {
-                        buttonSprite = CCSpriteGrayscale::create("rlStarIconBig.png"_spr);
+                        buttonSprite = CCSpriteGrayscale::create("RL_starBig.png"_spr);
                   } else {
-                        buttonSprite = CCSprite::create("rlStarIconBig.png"_spr);
+                        buttonSprite = CCSprite::create("RL_starBig.png"_spr);
                   }
 
                   auto modButtonSpr = CircleButtonSprite::create(
@@ -250,10 +250,22 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                   std::string argonToken =
                       Mod::get()->getSavedValue<std::string>("argon_token");
 
+                  // include attempt data for analytics / verification
+                  int attempts = 0;
+                  int attemptTime = 0;
+                  if (layerRef && layerRef->m_level) {
+                        attempts = layerRef->m_level->m_attempts;
+                        attemptTime = layerRef->m_level->m_attemptTime;
+                  }
+
+                  log::debug("Submitting completion with attempts: {} time: {}", attempts, attemptTime);
+
                   matjson::Value jsonBody;
                   jsonBody["accountId"] = accountId;
                   jsonBody["argonToken"] = argonToken;
                   jsonBody["levelId"] = levelId;
+                  jsonBody["attempts"] = attempts;
+                  jsonBody["attemptTime"] = attemptTime;
 
                   auto submitReq = web::WebRequest();
                   submitReq.bodyJSON(jsonBody);
@@ -301,12 +313,12 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                                           rewardLayer->m_starsLabel->setString(
                                               numToString(displayStars).c_str());
                                           rewardLayer->m_stars = displayStars;
-                                          rewardLayer->m_starsSprite = CCSprite::create("rlStarIconMed.png"_spr);
+                                          rewardLayer->m_starsSprite = CCSprite::create("RL_starMed.png"_spr);
 
                                           if (auto node =
                                                   rewardLayer->m_mainNode->getChildByType<CCSprite*>(0)) {
                                                 node->setDisplayFrame(
-                                                    CCSprite::create("rlStarIconMed.png"_spr)->displayFrame());
+                                                    CCSprite::create("RL_starMed.png"_spr)->displayFrame());
                                                 node->setScale(1.f);
                                           }
 
@@ -318,7 +330,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                                     log::info("Reward animation disabled");
                                     Notification::create("Received " +
                                                              numToString(difficulty) + " stars!",
-                                                         CCSprite::create("rlStarIconMed.png"_spr), 2.f)
+                                                         CCSprite::create("RL_starMed.png"_spr), 2.f)
                                         ->show();
                                     FMODAudioEngine::sharedEngine()->playEffect(
                                         // @geode-ignore(unknown-resource)
@@ -397,7 +409,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
 
                   if (!existingStarIcon) {
                         // star icon
-                        starIcon = CCSprite::create("rlStarIcon.png"_spr);
+                        starIcon = CCSprite::create("RL_starSmall.png"_spr);
                         starIcon->setPosition(
                             {difficultySprite2->getContentSize().width / 2 + 7, -7});
                         starIcon->setScale(0.75f);
@@ -653,7 +665,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                         sprite->setPositionY(sprite->getPositionY() + 10);
                   }
 
-                  auto starIcon = CCSprite::create("rlStarIcon.png"_spr);
+                  auto starIcon = CCSprite::create("RL_starSmall.png"_spr);
                   starIcon->setScale(0.75f);
                   starIcon->setID("rl-star-icon");
                   sprite->addChild(starIcon);
@@ -851,6 +863,13 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                         Mod::get()->setSavedValue<int>("role", 0);
                   }
             });
+      }
+
+      void likedItem(LikeItemType type, int id, bool liked) override {
+            // call base implementation
+            LevelInfoLayer::likedItem(type, id, liked);
+            log::debug("likedItem triggered (type={}, id={}, liked={}), repositioning star", static_cast<int>(type), id, liked);
+            this->repositionStars();
       }
 
       // refresh rating data when level is refreshed

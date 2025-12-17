@@ -1,5 +1,6 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/LevelSearchLayer.hpp>
+
 #include "../custom/RLCreatorLayer.hpp"
 
 using namespace geode::prelude;
@@ -13,13 +14,10 @@ class $modify(RLLevelSearchLayer, LevelSearchLayer) {
             auto winSize = CCDirector::sharedDirector()->getWinSize();
             auto bottomLeftMenu =
                 static_cast<CCMenu*>(this->getChildByID("bottom-left-menu"));
-            // leaderboard buttons
-            // most stars button
-            auto leaderboardSpr = CCSprite::create("rlStarIconBig.png"_spr);
-            auto lbCircleButton = AccountButtonSprite::create(
-                leaderboardSpr, AccountBaseColor::Blue, AccountBaseSize::Normal);
+            auto lbButtonSpr = CCSprite::create("RL_btn01.png"_spr);
+            lbButtonSpr->setScale(1.2f);
             auto lbButton = CCMenuItemSpriteExtra::create(
-                lbCircleButton, this, menu_selector(RLLevelSearchLayer::onRatedLayoutLayer));
+                lbButtonSpr, this, menu_selector(RLLevelSearchLayer::onRatedLayoutLayer));
             bottomLeftMenu->addChild(lbButton);
             bottomLeftMenu->updateLayout();
             return true;

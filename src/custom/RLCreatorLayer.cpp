@@ -51,7 +51,7 @@ bool RLCreatorLayer::init() {
 
       auto mainMenu = CCMenu::create();
       mainMenu->setPosition({winSize.width / 2, winSize.height / 2 - 10});
-      mainMenu->setContentSize({350.f, 240.f});
+      mainMenu->setContentSize({400.f, 240.f});
       mainMenu->setLayout(RowLayout::create()
                               ->setGap(6.f)
                               ->setGrowCrossAxis(true)
@@ -64,47 +64,62 @@ bool RLCreatorLayer::init() {
       title->setScale(0.8f);
       this->addChild(title);
 
-      auto featuredSpr = CCSprite::create("RL_featuredBtn.png"_spr);
-      if (!featuredSpr) featuredSpr = CCSprite::create("RL_featuredBtn.png"_spr);
+      auto featuredSpr = CCSprite::create("RL_featured01.png"_spr);
+      if (!featuredSpr) featuredSpr = CCSprite::create("RL_featured01.png"_spr);
       auto featuredItem = CCMenuItemSpriteExtra::create(
           featuredSpr, this, menu_selector(RLCreatorLayer::onFeaturedLayouts));
       featuredItem->setID("featured-button");
       mainMenu->addChild(featuredItem);
 
-      auto leaderboardSpr = CCSprite::create("RL_leaderboardBtn.png"_spr);
-      if (!leaderboardSpr) leaderboardSpr = CCSprite::create("RL_leaderboardBtn.png"_spr);
+      auto leaderboardSpr = CCSprite::create("RL_leaderboard01.png"_spr);
+      if (!leaderboardSpr) leaderboardSpr = CCSprite::create("RL_leaderboard01.png"_spr);
       auto leaderboardItem = CCMenuItemSpriteExtra::create(
           leaderboardSpr, this, menu_selector(RLCreatorLayer::onLeaderboard));
       leaderboardItem->setID("leaderboard-button");
       mainMenu->addChild(leaderboardItem);
 
-      auto newlySpr = CCSprite::create("RL_newRatedBtn.png"_spr);
-      if (!newlySpr) newlySpr = CCSprite::create("RL_newRatedBtn.png"_spr);
-      auto newlyItem = CCMenuItemSpriteExtra::create(
-          newlySpr, this, menu_selector(RLCreatorLayer::onNewRated));
-      newlyItem->setID("newly-rated-button");
-      mainMenu->addChild(newlyItem);
+      // gauntlet coming soon
+      auto gauntletSpr = CCSpriteGrayscale::create("RL_gauntlets01.png"_spr);
+      if (!gauntletSpr) gauntletSpr = CCSpriteGrayscale::create("RL_gauntlets01.png"_spr);
+      auto gauntletItem = CCMenuItemSpriteExtra::create(
+          gauntletSpr, this, menu_selector(RLCreatorLayer::onLayoutGauntlets));
+      gauntletItem->setID("gauntlet-button");
+      mainMenu->addChild(gauntletItem);
 
-      auto sendSpr = CCSprite::create("RL_sendLayoutsBtn.png"_spr);
-      if (!sendSpr) sendSpr = CCSprite::create("RL_sendLayoutsBtn.png"_spr);
-      auto sendItem = CCMenuItemSpriteExtra::create(
-          sendSpr, this, menu_selector(RLCreatorLayer::onSendLayouts));
-      sendItem->setID("send-layouts-button");
-      mainMenu->addChild(sendItem);
+      auto sentSpr = CCSprite::create("RL_sent01.png"_spr);
+      if (!sentSpr) sentSpr = CCSprite::create("RL_sent01.png"_spr);
+      auto sentItem = CCMenuItemSpriteExtra::create(
+          sentSpr, this, menu_selector(RLCreatorLayer::onSentLayouts));
+      sentItem->setID("sent-layouts-button");
+      mainMenu->addChild(sentItem);
 
-      auto searchSpr = CCSprite::create("RL_searchLayoutBtn.png"_spr);
-      if (!searchSpr) searchSpr = CCSprite::create("RL_searchLayoutBtn.png"_spr);
+      auto searchSpr = CCSprite::create("RL_search01.png"_spr);
+      if (!searchSpr) searchSpr = CCSprite::create("RL_search01.png"_spr);
       auto searchItem = CCMenuItemSpriteExtra::create(
           searchSpr, this, menu_selector(RLCreatorLayer::onSearchLayouts));
       searchItem->setID("search-layouts-button");
       mainMenu->addChild(searchItem);
 
-      auto eventSpr = CCSprite::create("RL_eventLayoutsBtn.png"_spr);
-      if (!eventSpr) eventSpr = CCSprite::create("RL_eventLayoutsBtn.png"_spr);
-      auto eventItem = CCMenuItemSpriteExtra::create(
-          eventSpr, this, menu_selector(RLCreatorLayer::onEventLayouts));
-      eventItem->setID("event-layouts-button");
-      mainMenu->addChild(eventItem);
+      auto dailySpr = CCSprite::create("RL_daily01.png"_spr);
+      if (!dailySpr) dailySpr = CCSprite::create("RL_daily01.png"_spr);
+      auto dailyItem = CCMenuItemSpriteExtra::create(
+          dailySpr, this, menu_selector(RLCreatorLayer::onDailyLayouts));
+      dailyItem->setID("daily-layouts-button");
+      mainMenu->addChild(dailyItem);
+
+      auto weeklySpr = CCSprite::create("RL_weekly01.png"_spr);
+      if (!weeklySpr) weeklySpr = CCSprite::create("RL_weekly01.png"_spr);
+      auto weeklyItem = CCMenuItemSpriteExtra::create(
+          weeklySpr, this, menu_selector(RLCreatorLayer::onWeeklyLayouts));
+      weeklyItem->setID("weekly-layouts-button");
+      mainMenu->addChild(weeklyItem);
+
+      auto monthlySpr = CCSprite::create("RL_monthly01.png"_spr);
+      if (!monthlySpr) monthlySpr = CCSprite::create("RL_monthly01.png"_spr);
+      auto monthlyItem = CCMenuItemSpriteExtra::create(
+          monthlySpr, this, menu_selector(RLCreatorLayer::onMonthlyLayouts));
+      monthlyItem->setID("monthly-layouts-button");
+      mainMenu->addChild(monthlyItem);
 
       // Try to use a grayscale sprite where available, but fallback to a regular sprite
       cocos2d::CCSprite* unknownSpr = CCSpriteGrayscale::create("RL_unknownBtn.png"_spr);
@@ -120,7 +135,7 @@ bool RLCreatorLayer::init() {
             auto mainMenuBg = CCScale9Sprite::create("square02_001.png");
             mainMenuBg->setContentSize(mainMenu->getContentSize());
             mainMenuBg->setAnchorPoint({0, 0});
-            mainMenuBg->setOpacity(150);
+            mainMenuBg->setOpacity(50);
             mainMenu->addChild(mainMenuBg, -1);
       }
 
@@ -136,7 +151,7 @@ bool RLCreatorLayer::init() {
       this->addChild(infoMenu);
       // credits button at the bottom right
       auto creditButtonSpr =
-          CCSprite::create("rlBadgeMod.png"_spr);
+          CCSprite::create("RL_badgeMod01.png"_spr);
       creditButtonSpr->setScale(1.5f);
       auto creditButton = CCMenuItemSpriteExtra::create(
           creditButtonSpr, this, menu_selector(RLCreatorLayer::onCreditsButton));
@@ -204,6 +219,73 @@ bool RLCreatorLayer::init() {
 
 void RLCreatorLayer::onSettingsButton(CCObject* sender) {
       openSettingsPopup(getMod());
+}
+
+void RLCreatorLayer::onLayoutGauntlets(CCObject* sender) {
+      auto rng = rand() % 5;
+      DialogObject* dialogObj = nullptr;
+      // the yapp-a-ton
+      switch (rng) {
+            case 0:
+                  dialogObj = DialogObject::create(
+                      "Level Creator",
+                      "I think something is cooking up in this button... but it's a secret for now!",
+                      28,
+                      .8f,
+                      false,
+                      ccWHITE);
+                  break;
+            case 1:
+                  dialogObj = DialogObject::create(
+                      "Level Creator",
+                      "Did I hear <cg>Layout Gauntlets</c>? That's interesting...",
+                      28,
+                      .8f,
+                      false,
+                      ccWHITE);
+                  break;
+            case 2:
+                  dialogObj = DialogObject::create(
+                      "Level Creator",
+                      "<cg>Layout Gauntlets?</c> Hmm... I wonder what that could be.",
+                      28,
+                      .8f,
+                      false,
+                      ccWHITE);
+                  break;
+            case 3:
+                  dialogObj = DialogObject::create(
+                      "Level Creator",
+                      "I've heard whispers about <cg>Layout Gauntlets</c>. <cl>Sounds exciting!</c>",
+                      28,
+                      .8f,
+                      false,
+                      ccWHITE);
+                  break;
+            case 4:
+                  dialogObj = DialogObject::create(
+                      "Level Creator",
+                      "I wonder if <cg>Layout Gauntlets</c> will change the way we <cl>create layouts...</c>",
+                      28,
+                      .8f,
+                      false,
+                      ccWHITE);
+                  break;
+            case 5:
+                  dialogObj = DialogObject::create(
+                      "Level Creator",
+                      "The idea of <cg>Layout Gauntlets</c> has me intrigued. <cl>Can't wait to see what it's all about!</c>",
+                      28,
+                      .8f,
+                      false,
+                      ccWHITE);
+                  break;
+      }
+      if (dialogObj) {
+            auto dialog = DialogLayer::createDialogLayer(dialogObj, nullptr, 2);
+            dialog->addToMainScene();
+            dialog->animateInRandomSide();
+      }
 }
 
 void RLCreatorLayer::onUnknownButton(CCObject* sender) {
@@ -347,9 +429,19 @@ void RLCreatorLayer::onCreditsButton(CCObject* sender) {
       creditsPopup->show();
 }
 
-void RLCreatorLayer::onEventLayouts(CCObject* sender) {
-      auto eventPopup = RLEventLayouts::create();
-      eventPopup->show();
+void RLCreatorLayer::onDailyLayouts(CCObject* sender) {
+      auto dailyPopup = RLEventLayouts::create(RLEventLayouts::EventType::Daily);
+      dailyPopup->show();
+}
+
+void RLCreatorLayer::onWeeklyLayouts(CCObject* sender) {
+      auto weeklyPopup = RLEventLayouts::create(RLEventLayouts::EventType::Weekly);
+      weeklyPopup->show();
+}
+
+void RLCreatorLayer::onMonthlyLayouts(CCObject* sender) {
+      auto monthlyPopup = RLEventLayouts::create(RLEventLayouts::EventType::Monthly);
+      monthlyPopup->show();
 }
 
 void RLCreatorLayer::onBackButton(CCObject* sender) {
@@ -412,62 +504,7 @@ void RLCreatorLayer::onFeaturedLayouts(CCObject* sender) {
           });
 }
 
-void RLCreatorLayer::onNewRated(CCObject* sender) {
-      web::WebRequest()
-          .param("type", 3)
-          .param("amount", 100)
-          .get("https://gdrate.arcticwoof.xyz/getLevels")
-          .listen([this](web::WebResponse* res) {
-                if (res && res->ok()) {
-                      auto jsonResult = res->json();
-
-                      if (jsonResult) {
-                            auto json = jsonResult.unwrap();
-                            std::string levelIDs;
-                            bool first = true;
-
-                            if (json.contains("levelIds")) {
-                                  auto levelsArr = json["levelIds"];
-
-                                  // iterate
-                                  for (auto levelIDValue : levelsArr) {
-                                        auto levelID = levelIDValue.as<int>();
-                                        if (levelID) {
-                                              if (!first)
-                                                    levelIDs += ",";
-                                              levelIDs += numToString(levelID.unwrap());
-                                              first = false;
-                                        }
-                                  }
-                            }
-
-                            if (!levelIDs.empty()) {
-                                  auto searchObject =
-                                      GJSearchObject::create(SearchType::Type19, levelIDs);
-                                  auto browserLayer = LevelBrowserLayer::create(searchObject);
-                                  auto scene = CCScene::create();
-                                  scene->addChild(browserLayer);
-                                  auto transitionFade = CCTransitionFade::create(0.5f, scene);
-                                  CCDirector::sharedDirector()->pushScene(transitionFade);
-                            } else {
-                                  log::warn("No levels found in response");
-                                  Notification::create("No levels found",
-                                                       NotificationIcon::Warning)
-                                      ->show();
-                            }
-                      } else {
-                            log::error("Failed to parse response JSON");
-                      }
-                } else {
-                      log::error("Failed to fetch levels from server");
-                      Notification::create("Failed to fetch levels from server",
-                                           NotificationIcon::Error)
-                          ->show();
-                }
-          });
-}
-
-void RLCreatorLayer::onSendLayouts(CCObject* sender) {
+void RLCreatorLayer::onSentLayouts(CCObject* sender) {
       web::WebRequest()
           .param("type", 1)
           .param("amount", 100)

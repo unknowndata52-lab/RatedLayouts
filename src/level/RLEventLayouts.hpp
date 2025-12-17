@@ -6,7 +6,13 @@ using namespace geode::prelude;
 
 class RLEventLayouts : public geode::Popup<> {
      public:
-      static RLEventLayouts* create();
+      enum class EventType {
+            Daily = 0,
+            Weekly = 1,
+            Monthly = 2,
+      };
+
+      static RLEventLayouts* create(EventType type);
 
      private:
       bool setup() override;
@@ -33,6 +39,7 @@ class RLEventLayouts : public geode::Popup<> {
             double secondsLeft = 0.0;
       };
       EventSection m_sections[3];
+      EventType m_eventType = EventType::Daily;
       CCLayer* m_eventMenu = nullptr;
       bool m_setupFinished = false;
 };

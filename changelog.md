@@ -1,7 +1,17 @@
 # v0.2.7-beta.1
 
-- **New Texture Update!** Huge thanks to [Dasshu](id:1975253) for creating new textures for Rated Layouts mod!
+- **New Texture Update!** Huge thanks to [Dasshu](user:1975253) for creating new textures and logo for Rated Layouts mod and [Darkore](user:3595559) for the new stars icon mockup!
+- Removed "Newly Rated" button. _You can still find newly rated layouts in the Custom Search layer by simply clicking the search button without any filters applied._
+- Seperated the Event Layouts into Daily, Weekly, and Monthly Layouts.
+- **Added Layout Gauntlets!** A special themed layout gauntlets curated by Rated Layouts Admins and Moderators. Used to host special layout creator contests.
+- Added the following mod incompatibilities to prevent conflicts with the difficulty sprite:
+  - [More Difficulties](mod:uproxide.more_difficulties)
+  - [Demons In Between](mod:hiimjustin000.demons_in_between)
+- Added Epic Layout Suggest for Layout Moderators.
+- Improved "anti-cheat" for beating levels.
 - Fixed issue where users cache isn't always up to date when showing stats in the comments.
+- Fixed issue when liking/unliking levels, the stars count in the level info layer isn't updated correctly.
+- Tweaked the glow effect and the Layout Moderators and Admins' comment colors to be less intense.
 
 # v0.2.6-beta.1
 
