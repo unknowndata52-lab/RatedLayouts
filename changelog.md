@@ -1,3 +1,9 @@
+# v0.2.8-beta.1
+
+- Fixed issue where (Badge API)[mod:jouca.badgesapi] was set to the wrong recommended version
+- Removed (Demons In Between)[mod:hiimjustin000.demons_in_between] from the incompatible mods as it doesn't conflict at all.
+*Note: You can still have [More Difficulties](mod:uproxide.more_difficulties) enabled, it just shows a warning that it conflicts but you can still use both mods.*
+
 # v0.2.7-beta.1
 
 - **New Texture Update!** Huge thanks to [Dasshu](user:1975253) for creating new textures and logo for Rated Layouts mod and [Darkore](user:3595559) for the new stars icon mockup!

@@ -8,7 +8,7 @@
 	},
 	"id": "arcticwoof.rated_layouts",
 	"name": "Rated Layouts",
-	"version": "v0.2.7-beta.1",
+	"version": "v0.2.8-beta.1",
 	"developer": "ArcticWoof",
 	"description": "Play rated classic layout levels",
 	"resources": {
@@ -17,14 +17,14 @@
 	"dependencies": {
 		"jouca.badgesapi": {
 			"importance": "recommended",
-			"version": ">=1.21.0"
+			"version": ">=1.0.0"
 		},
 		"capeling.garage-stats-menu": {
 			"importance": "required",
 			"version": ">=1.0.1"
 		},
 		"alphalaneous.pages_api": {
-			"importance": "required",
+			"importance": "recommended",
 			"version": ">=1.4.1"
 		}
 	},
@@ -42,10 +42,6 @@
 	], 
 	"incompatibilities": {
 		"uproxide.more_difficulties": {
-			"version": ">=1.0.1",
-			"importance": "conflicting"
-		},
-		"hiimjustin000.demons_in_between": {
 			"version": ">=1.0.1",
 			"importance": "conflicting"
 		}
