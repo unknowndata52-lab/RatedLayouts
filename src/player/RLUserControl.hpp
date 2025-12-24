@@ -26,6 +26,7 @@ class RLUserControl : public geode::Popup<> {
       std::vector<UserOption> m_userOptions;
       CCMenuItemSpriteExtra* m_optionsButton = nullptr;
       CCMenuItemSpriteExtra* m_applyButton = nullptr;
+      ButtonSprite* m_applySprite = nullptr;
       LoadingSpinner* m_applySpinner = nullptr;
       bool m_isInitializing = false;
       bool m_waitingForApplyDialog = false;

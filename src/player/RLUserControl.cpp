@@ -66,6 +66,8 @@ bool RLUserControl::setup() {
 
       // Add an apply button to submit the final state
       auto applySprite = ButtonSprite::create("Apply", 1.f);
+      m_applySprite = applySprite;
+      if (m_applySprite) m_applySprite->updateBGImage("GJ_button_04.png");
       m_applyButton = CCMenuItemSpriteExtra::create(applySprite, this, menu_selector(RLUserControl::onApplyChanges));
       m_applyButton->setPosition({m_mainLayer->getContentSize().width / 2, 0});
       m_applyButton->setEnabled(false);
@@ -176,6 +178,7 @@ void RLUserControl::onApplyChanges(CCObject* sender) {
 
       // disable UI while request is in-flight
       if (m_applyButton) m_applyButton->setEnabled(false);
+      if (m_applySprite) m_applySprite->updateBGImage("GJ_button_04.png");
       setAllOptionsEnabled(false);
       if (m_applySpinner) {
             m_applySpinner->setVisible(true);
@@ -194,7 +197,16 @@ void RLUserControl::onApplyChanges(CCObject* sender) {
 
             // re-enable UI regardless
             thisRef->setAllOptionsEnabled(true);
-            if (thisRef->m_applyButton) thisRef->m_applyButton->setEnabled(true);
+            // compute whether any option still differs
+            bool differs = false;
+            for (auto& opt : thisRef->m_userOptions) {
+                  if (opt.desired != opt.persisted) {
+                        differs = true;
+                        break;
+                  }
+            }
+            if (thisRef->m_applyButton) thisRef->m_applyButton->setEnabled(differs);
+            if (thisRef->m_applySprite) thisRef->m_applySprite->updateBGImage(differs ? "GJ_button_01.png" : "GJ_button_04.png");
             if (thisRef->m_applySpinner) thisRef->m_applySpinner->setVisible(false);
             if (thisRef->m_applyButton) thisRef->m_applyButton->setVisible(true);
 
@@ -209,6 +221,7 @@ void RLUserControl::onApplyChanges(CCObject* sender) {
                   }
                   thisRef->m_isInitializing = false;
                   if (thisRef->m_applyButton) thisRef->m_applyButton->setEnabled(false);
+                  if (thisRef->m_applySprite) thisRef->m_applySprite->updateBGImage("GJ_button_04.png");
                   if (thisRef->m_applyButton) thisRef->m_applyButton->setVisible(true);
                   if (thisRef->m_applySpinner) thisRef->m_applySpinner->setVisible(false);
                   return;
@@ -225,6 +238,7 @@ void RLUserControl::onApplyChanges(CCObject* sender) {
                   }
                   thisRef->m_isInitializing = false;
                   if (thisRef->m_applyButton) thisRef->m_applyButton->setEnabled(false);
+                  if (thisRef->m_applySprite) thisRef->m_applySprite->updateBGImage("GJ_button_04.png");
                   if (thisRef->m_applyButton) thisRef->m_applyButton->setVisible(true);
                   if (thisRef->m_applySpinner) thisRef->m_applySpinner->setVisible(false);
                   return;
@@ -239,6 +253,7 @@ void RLUserControl::onApplyChanges(CCObject* sender) {
                   }
                   Notification::create("User has been updated!", NotificationIcon::Success)->show();
                   if (thisRef->m_applyButton) thisRef->m_applyButton->setEnabled(false);
+                  if (thisRef->m_applySprite) thisRef->m_applySprite->updateBGImage("GJ_button_04.png");
                   thisRef->onClose(nullptr);
             } else {
                   Notification::create("Failed to update user", NotificationIcon::Error)->show();
@@ -277,6 +292,7 @@ void RLUserControl::setOptionState(const std::string& key, bool desired, bool up
             }
       }
       if (m_applyButton) m_applyButton->setEnabled(differs);
+      if (m_applySprite) m_applySprite->updateBGImage(differs ? "GJ_button_01.png" : "GJ_button_04.png");
 }
 
 void RLUserControl::setOptionEnabled(const std::string& key, bool enabled) {

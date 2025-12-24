@@ -125,6 +125,7 @@ bool RLSearchLayer::init() {
 
       m_searchInput = TextInput::create(245.f, "Search Layouts...");
       m_searchInput->setID("search-input");
+      m_searchInput->setCommonFilter(CommonFilter::Name);
       m_searchInputMenu->addChild(m_searchInput);
       m_searchInput->setPosition({-50.f, 0});
 
