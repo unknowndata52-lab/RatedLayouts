@@ -207,6 +207,12 @@ class $modify(LevelCell) {
             auto sprite = static_cast<GJDifficultySprite*>(difficultySprite);
             sprite->updateDifficultyFrame(difficultyLevel, GJDifficultyName::Short);
 
+            if (auto moreDifficultiesSpr = difficultyContainer->getChildByID("uproxide.more_difficulties/more-difficulties-spr")) {
+                  moreDifficultiesSpr->setVisible(false);
+                  sprite->setOpacity(255);
+            }
+
+
             // star or planet icon (planet for platformer levels)
             CCSprite* newStarIcon = nullptr;
             if (this->m_level && this->m_level->isPlatformer()) {

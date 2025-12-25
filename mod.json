@@ -40,12 +40,6 @@
 		"enhancement",
 		"gameplay"
 	], 
-	"incompatibilities": {
-		"uproxide.more_difficulties": {
-			"version": ">=1.0.1",
-			"importance": "conflicting"
-		}
-	},
 	"settings": {
 		"disableBackground": {
 			"name": "Disable Moving Background",
