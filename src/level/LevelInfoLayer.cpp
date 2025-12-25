@@ -388,18 +388,13 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                         auto submitJson = submitJsonRes.unwrap();
                         bool success = submitJson["success"].asBool().unwrapOrDefault();
                         int responseStars = submitJson["stars"].asInt().unwrapOrDefault();
-
+                        int responsePlanets = submitJson["planets"].asInt().unwrapOrDefault();
                         log::info("submitComplete success: {}, response stars: {}", success,
                                   responseStars);
 
                         if (success) {
                               bool isPlat = false;
                               if (layerRef && layerRef->m_level) isPlat = layerRef->m_level->isPlatformer();
-
-                              int responsePlanets = 0;
-                              if (isPlat) {
-                                    responsePlanets = submitJson["planets"].asInt().unwrapOrDefault();
-                              }
                               log::info("submitComplete values - stars: {}, planets: {}", responseStars, responsePlanets);
                               int displayReward = (isPlat ? (responsePlanets - difficulty) : (responseStars - difficulty));
 
@@ -427,7 +422,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                                           }
 
                                           auto texture = CCTextureCache::sharedTextureCache()->addImage(
-                                                isPlat ? "RL_planetBig.png"_spr : "RL_starBig.png"_spr, false);
+                                              isPlat ? "RL_planetBig.png"_spr : "RL_starBig.png"_spr, false);
                                           auto displayFrame = CCSpriteFrame::createWithTexture(texture, {{0, 0}, texture->getContentSize()});
 
                                           if (isPlat) {

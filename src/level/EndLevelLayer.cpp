@@ -134,12 +134,12 @@ class $modify(EndLevelLayer) {
                         bool success = submitJson["success"].asBool().unwrapOrDefault();
                         int responseStars =
                             submitJson["stars"].asInt().unwrapOrDefault();
+                        int responsePlanets = submitJson["planets"].asInt().unwrapOrDefault();
 
                         log::info("submitComplete success: {}, response stars: {}",
                                   success, responseStars);
 
                         if (success) {
-                              int responsePlanets = submitJson["planets"].asInt().unwrapOrDefault();
                               int displayStars = isPlat ? (responsePlanets - starReward) : (responseStars - starReward);
                               if (isPlat) {
                                     log::info("Display planets: {} - {} = {}", responsePlanets, starReward, displayStars);

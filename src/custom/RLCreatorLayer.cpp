@@ -171,7 +171,7 @@ bool RLCreatorLayer::init() {
             // position top-right of the icon
             auto size = annouceSpr->getContentSize();
             badgeSpr->setScale(0.5f);
-            badgeSpr->setPosition({size.width - 10, size.height - 10});
+            badgeSpr->setPosition({size.width - 15, size.height - 15});
             badgeSpr->setVisible(false);
             annouceBtn->addChild(badgeSpr, 10);
             m_newsBadge = badgeSpr;

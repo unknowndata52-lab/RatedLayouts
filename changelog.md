@@ -1,9 +1,13 @@
 # v0.3.2-beta.1
 
-- Removed [More Difficulties](mod:uproxide.more_difficulties) from the incompatible mods, but the sprite won't be shown for layouts that is rated.
+- Removed [More Difficulties](mod:uproxide.more_difficulties) from the incompatible mods, but the more difficulties sprite won't be shown for layouts that is rated.
 - Fixed issue where the sprites on the reward animation is showing the incorrect texture.
 - Fixed issue where the stars/planets reward animation crashes upon completing a level.
-*Thanks [hiimjasmine00](https://github.com/hiimjasmine00) for the fixes!*
+- Cached rating data is now pruned to only keep necessary fields to reduce cache size.
+- Tweaked the rating difficulty sprite positions to be more consistent.
+- Annoucement button sprite changed to a more button like.
+
+*Thanks to [hiimjasmine00](https://github.com/hiimjasmine00) for the fixes!*
 
 # v0.3.1-beta.1
 
