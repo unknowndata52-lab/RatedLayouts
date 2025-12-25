@@ -12,6 +12,7 @@ static std::string getUserRoleCachePath() {
 struct CachedUserProfile {
       int role = 0;
       int stars = 0;
+      int planets = 0;
 };
 
 static std::optional<CachedUserProfile> getCachedUserProfile(int accountId) {
@@ -29,10 +30,37 @@ static std::optional<CachedUserProfile> getCachedUserProfile(int accountId) {
       CachedUserProfile p;
       p.role = entry["role"].asInt().unwrapOrDefault();
       p.stars = entry["stars"].asInt().unwrapOrDefault();
+      p.planets = entry["planets"].asInt().unwrapOrDefault();
+      // missing oh no
+      if (p.role == 0 && p.stars == 0 && p.planets == 0) return std::nullopt;
       return p;
 }
 
-static void cacheUserProfile(int accountId, int role, int stars) {
+static void removeCachedUserProfile(int accountId) {
+      auto cachePath = getUserRoleCachePath();
+      auto existingData = utils::file::readString(cachePath);
+      if (!existingData) return;
+
+      auto parsed = matjson::parse(existingData.unwrap());
+      if (!parsed) return;
+      auto root = parsed.unwrap();
+      if (!root.isObject()) return;
+      auto key = fmt::format("{}", accountId);
+      if (!root.contains(key)) return;
+      root.erase(key);
+      auto jsonString = root.dump();
+      auto writeResult = utils::file::writeString(geode::utils::string::pathToString(cachePath), jsonString);
+      if (writeResult) {
+            log::debug("Removed cached user profile for account ID: {}", accountId);
+      }
+}
+
+static void cacheUserProfile(int accountId, int role, int stars, int planets) {
+      if (role == 0 && stars == 0 && planets == 0) {
+            removeCachedUserProfile(accountId);
+            return;
+      }
+
       auto saveDir = dirs::getModsSaveDir();
       auto createDirResult = utils::file::createDirectory(saveDir);
       if (!createDirResult) {
@@ -52,31 +80,13 @@ static void cacheUserProfile(int accountId, int role, int stars) {
       matjson::Value obj = matjson::Value::object();
       obj["role"] = role;
       obj["stars"] = stars;
+      obj["planets"] = planets;
       root[fmt::format("{}", accountId)] = obj;
 
       auto jsonString = root.dump();
       auto writeResult = utils::file::writeString(geode::utils::string::pathToString(cachePath), jsonString);
       if (writeResult) {
-            log::debug("Cached user role {} for account ID: {}", role, accountId);
-      }
-}
-
-static void removeCachedUserProfile(int accountId) {
-      auto cachePath = getUserRoleCachePath();
-      auto existingData = utils::file::readString(cachePath);
-      if (!existingData) return;
-
-      auto parsed = matjson::parse(existingData.unwrap());
-      if (!parsed) return;
-      auto root = parsed.unwrap();
-      if (!root.isObject()) return;
-      auto key = fmt::format("{}", accountId);
-      if (!root.contains(key)) return;
-      root.erase(key);
-      auto jsonString = root.dump();
-      auto writeResult = utils::file::writeString(geode::utils::string::pathToString(cachePath), jsonString);
-      if (writeResult) {
-            log::debug("Removed cached user profile for account ID: {}", accountId);
+            log::debug("Cached user profile for account ID: {} (role={} stars={} planets={})", accountId, role, stars, planets);
       }
 }
 
@@ -177,13 +187,25 @@ class $modify(RLCommentCell, CommentCell) {
 
       void fetchUserRole(int accountId) {
             log::debug("Fetching role for comment user ID: {}", accountId);
-            auto getTask = web::WebRequest()
-                               .param("accountId", accountId)
-                               .get("https://gdrate.arcticwoof.xyz/profile");
+
+            // Use POST with argon token (required) and accountId in JSON body
+            auto token = Mod::get()->getSavedValue<std::string>("argon_token");
+            if (token.empty()) {
+                  log::warn("Argon token missing, aborting role fetch for {}", accountId);
+                  return;
+            }
+
+            matjson::Value body = matjson::Value::object();
+            body["accountId"] = accountId;
+            body["argonToken"] = token;
+
+            auto postTask = web::WebRequest()
+                                .bodyJSON(body)
+                                .post("https://gdrate.arcticwoof.xyz/profile");
 
             Ref<RLCommentCell> cellRef = this;  // commentcell ref
 
-            getTask.listen([cellRef, accountId](web::WebResponse* response) {
+            postTask.listen([cellRef, accountId](web::WebResponse* response) {
                   log::debug("Received role response from server for comment");
 
                   // did this so it doesnt crash if the cell is deleted before
@@ -228,10 +250,34 @@ class $modify(RLCommentCell, CommentCell) {
                   auto json = jsonRes.unwrap();
                   int role = json["role"].asInt().unwrapOrDefault();
                   int stars = json["stars"].asInt().unwrapOrDefault();
+                  int planets = json["planets"].asInt().unwrapOrDefault();
+
+                  // If user has no role and no stars and no planets, delete from cache and clear UI
+                  if (role == 0 && stars == 0 && planets == 0) {
+                        log::debug("User {} has no role/stars/planets - removing from cache", accountId);
+                        removeCachedUserProfile(accountId);
+                        if (!cellRef) return;
+                        cellRef->m_fields->role = 0;
+                        cellRef->m_fields->stars = 0;
+                        // remove any role badges if present
+                        if (cellRef->m_mainLayer) {
+                              if (auto userNameMenu = typeinfo_cast<CCMenu*>(cellRef->m_mainLayer->getChildByIDRecursive("username-menu"))) {
+                                    if (auto owner = userNameMenu->getChildByID("rl-comment-owner-badge")) owner->removeFromParent();
+                                    if (auto mod = userNameMenu->getChildByID("rl-comment-mod-badge")) mod->removeFromParent();
+                                    if (auto admin = userNameMenu->getChildByID("rl-comment-admin-badge")) admin->removeFromParent();
+                                    userNameMenu->updateLayout();
+                              }
+                              // remove any glow
+                              auto glowId = fmt::format("rl-comment-glow-{}", accountId);
+                              if (auto glow = cellRef->m_mainLayer->getChildByIDRecursive(glowId)) glow->removeFromParent();
+                        }
+                        return;
+                  }
+
                   cellRef->m_fields->role = role;
                   cellRef->m_fields->stars = stars;
 
-                  cacheUserProfile(accountId, role, stars);
+                  cacheUserProfile(accountId, role, stars, planets);
 
                   log::debug("User comment role: {}", role);
 

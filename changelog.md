@@ -1,8 +1,10 @@
 # v0.3.2-beta.1
 
 - Removed [More Difficulties](mod:uproxide.more_difficulties) from the incompatible mods, but the more difficulties sprite won't be shown for layouts that is rated.
+- Added "Clear Cached Data" button in the mod settings to clear all cached rating and profile data.
 - Fixed issue where the sprites on the reward animation is showing the incorrect texture.
 - Fixed issue where the stars/planets reward animation crashes upon completing a level.
+- Fixed issue where Comment Cell isn't fetching the user profile data correctly.
 - Cached rating data is now pruned to only keep necessary fields to reduce cache size.
 - Tweaked the rating difficulty sprite positions to be more consistent.
 - Annoucement button sprite changed to a more button like.
