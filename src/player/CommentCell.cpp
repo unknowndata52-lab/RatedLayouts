@@ -295,7 +295,7 @@ class $modify(RLCommentCell, CommentCell) {
                 "Layout Administrator",
                 "This user can <cj>rate layout levels</c> for <cl>Rated "
                 "Layouts</c>. They have the same power as <cg>Moderators</c> but including the ability to change the <cy>featured ranking on the "
-                "featured layout levels.</c> and <cg>set event layouts</c>.",
+                "featured layout levels</c> and <cg>set event layouts</c>.",
                 "OK")
                 ->show();
       }

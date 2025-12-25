@@ -34,7 +34,7 @@ bool RLAnnoucementPopup::setup() {
       clip->addChild(imageSpr);
 
       // button
-      auto buttonSpr = ButtonSprite::create("Learn More", "bigFont.fnt", "GJ_button_01.png");
+      auto buttonSpr = ButtonSprite::create("Learn More", "goldFont.fnt", "GJ_button_01.png");
       auto buttonItem = CCMenuItemSpriteExtra::create(buttonSpr, this, menu_selector(RLAnnoucementPopup::onClick));
       buttonItem->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, 0});
       m_buttonMenu->addChild(buttonItem);

@@ -95,7 +95,7 @@ void RLCommunityVotePopup::onSubmit(CCObject*) {
 }
 
 bool RLCommunityVotePopup::setup() {
-      setTitle("Rated Layout Community Vote");
+      setTitle("Rated Layouts Community Vote");
       addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupBlue, false);
       // Use taller vertical rows so label, score and input stack vertically
       float rowW = 100.f;

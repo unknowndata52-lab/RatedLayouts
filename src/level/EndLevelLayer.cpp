@@ -206,7 +206,7 @@ class $modify(EndLevelLayer) {
 
                                           // Replace the main display sprite
                                           auto texture = CCTextureCache::sharedTextureCache()->addImage(
-                                                isPlat ? "RL_planetBig.png"_spr : "RL_starBig.png"_spr, false);
+                                              isPlat ? "RL_planetBig.png"_spr : "RL_starBig.png"_spr, false);
                                           auto displayFrame = CCSpriteFrame::createWithTexture(texture, {{0, 0}, texture->getContentSize()});
 
                                           if (isPlat) {
@@ -246,10 +246,9 @@ class $modify(EndLevelLayer) {
                                     endLayerRef->addChild(fakeCircleWave, 1);
                               }
                         } else if (!success && responseStars == 0) {
-                              // Notification::create(
-                              //     "Stars already claimed for this level!",
-                              //     NotificationIcon::Warning)
-                              //     ->show();
+                              std::string rewards = isPlat ? "Planets" : "Stars";
+                              std::string medSprite = isPlat ? "RL_planetMed.png"_spr : "RL_starMed.png"_spr;
+                              Notification::create(rewards + " has already been claimed for this level!", CCSprite::create(medSprite.c_str()))->show();
                               log::info("Stars already claimed for level ID: {}",
                                         levelId);
                         }

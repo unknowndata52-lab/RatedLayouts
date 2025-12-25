@@ -158,21 +158,22 @@ bool RLCreatorLayer::init() {
 
       // news button above discord
       // @geode-ignore(unknown-resource)
-      auto newsIconSpr = CCSprite::createWithSpriteFrameName("geode.loader/news.png");
-      auto newsIconBtn = CCMenuItemSpriteExtra::create(newsIconSpr, this, menu_selector(RLCreatorLayer::onAnnoucementButton));
-      newsIconBtn->setPosition({infoButton->getPositionX(), infoButton->getPositionY() + 80});
-      infoMenu->addChild(newsIconBtn);
-      m_newsIconBtn = newsIconBtn;
+      auto annouceSpr = AccountButtonSprite::createWithSpriteFrameName("geode.loader/news.png", 1.f, AccountBaseColor::Gray, AccountBaseSize::Normal);
+      annouceSpr->setScale(0.7f);
+      auto annouceBtn = CCMenuItemSpriteExtra::create(annouceSpr, this, menu_selector(RLCreatorLayer::onAnnoucementButton));
+      annouceBtn->setPosition({infoButton->getPositionX(), infoButton->getPositionY() + 80});
+      infoMenu->addChild(annouceBtn);
+      m_newsIconBtn = annouceBtn;
 
       // @geode-ignore(unknown-resource)
-      auto badgeSpr = CCSprite::createWithSpriteFrameName("geode.loader/updates-available.png");
+      auto badgeSpr = CCSprite::createWithSpriteFrameName("geode.loader/updates-failed.png");
       if (badgeSpr) {
             // position top-right of the icon
-            auto size = newsIconSpr ? newsIconSpr->getContentSize() : CCSize{32, 32};
-            badgeSpr->setScale(0.4f);
-            badgeSpr->setPosition({size.width, size.height});
+            auto size = annouceSpr->getContentSize();
+            badgeSpr->setScale(0.5f);
+            badgeSpr->setPosition({size.width - 10, size.height - 10});
             badgeSpr->setVisible(false);
-            newsIconBtn->addChild(badgeSpr, 10);
+            annouceBtn->addChild(badgeSpr, 10);
             m_newsBadge = badgeSpr;
       }
 

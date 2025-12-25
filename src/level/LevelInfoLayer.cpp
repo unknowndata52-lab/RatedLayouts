@@ -92,6 +92,14 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
       struct Fields {
             bool m_difficultyOffsetApplied = false;  // this is ass. very trash, hacky
                                                      // way to fix this refresh bug
+            bool m_originalYSaved = false;
+            float m_originalDifficultySpriteY = 0.0f;
+            bool m_lastAppliedIsDemon = false;
+            // coins original positions
+            bool m_originalCoinsSaved = false;
+            float m_originalCoin1Y = 0.0f;
+            float m_originalCoin2Y = 0.0f;
+            float m_originalCoin3Y = 0.0f;
       };
 
       bool init(GJGameLevel* level, bool challenge) {
@@ -572,29 +580,43 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                   auto coinIcon3 = layerRef->getChildByID("coin-icon-3");
 
                   if (!layerRef->m_fields->m_difficultyOffsetApplied && coinIcon1) {
-                        if (isDemon) {
-                              sprite->setPositionY(sprite->getPositionY() + 15);
-                        } else {
-                              sprite->setPositionY(sprite->getPositionY() + 10);
+                        // save original Y so we can revert on refresh
+                        if (!layerRef->m_fields->m_originalYSaved) {
+                              layerRef->m_fields->m_originalDifficultySpriteY = sprite->getPositionY();
+                              layerRef->m_fields->m_originalYSaved = true;
                         }
+                        // save original coin Y positions once
+                        if (!layerRef->m_fields->m_originalCoinsSaved) {
+                              layerRef->m_fields->m_originalCoin1Y = coinIcon1->getPositionY();
+                              if (coinIcon2) layerRef->m_fields->m_originalCoin2Y = coinIcon2->getPositionY();
+                              if (coinIcon3) layerRef->m_fields->m_originalCoin3Y = coinIcon3->getPositionY();
+                              layerRef->m_fields->m_originalCoinsSaved = true;
+                        }
+
+                        layerRef->m_fields->m_lastAppliedIsDemon = isDemon;
+
+                        // compute absolute base and set absolute Y to avoid drift
+                        float baseY = layerRef->m_fields->m_originalDifficultySpriteY;
+                        float newY = baseY + (isDemon ? 15.f : 10.f);
+                        sprite->setPositionY(newY);
                         layerRef->m_fields->m_difficultyOffsetApplied = true;
 
-                        // time to adjust the coins as well
-                        coinIcon1->setPositionY(coinIcon1->getPositionY() -
-                                                (isDemon ? 6 : 4));  // very precise yesh
-                        if (coinIcon2)
-                              coinIcon2->setPositionY(coinIcon2->getPositionY() -
-                                                      (isDemon ? 6 : 4));
-                        if (coinIcon3)
-                              coinIcon3->setPositionY(coinIcon3->getPositionY() -
-                                                      (isDemon ? 6 : 4));
+                        // set coin absolute positions based on saved originals
+                        int delta = isDemon ? 6 : 4;
+                        coinIcon1->setPositionY(layerRef->m_fields->m_originalCoin1Y - delta);
+                        if (coinIcon2) coinIcon2->setPositionY(layerRef->m_fields->m_originalCoin2Y - delta);
+                        if (coinIcon3) coinIcon3->setPositionY(layerRef->m_fields->m_originalCoin3Y - delta);
                   } else if (!layerRef->m_fields->m_difficultyOffsetApplied && !coinIcon1) {
                         // No coins, but still apply offset for levels without coins
-                        if (isDemon) {
-                              sprite->setPositionY(sprite->getPositionY() + 15);
-                        } else {
-                              sprite->setPositionY(sprite->getPositionY() + 10);
+                        // save original Y so we can revert on refresh
+                        if (!layerRef->m_fields->m_originalYSaved) {
+                              layerRef->m_fields->m_originalDifficultySpriteY = sprite->getPositionY();
+                              layerRef->m_fields->m_originalYSaved = true;
                         }
+                        layerRef->m_fields->m_lastAppliedIsDemon = isDemon;
+                        float baseY = layerRef->m_fields->m_originalDifficultySpriteY;
+                        float newY = baseY + (isDemon ? 15.f : 10.f);
+                        sprite->setPositionY(newY);
                         layerRef->m_fields->m_difficultyOffsetApplied = true;
                   }
             }
@@ -848,18 +870,40 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                         sprite->setOpacity(255);
                   }
 
-                  // AFTER frame update
-                  if (isDemon) {
-                        // if coin exists, reposition it
-                        auto coinIcon1 = layerRef->getChildByID("coin-icon-1");
-                        if (coinIcon1) {
-                              sprite->setPositionY(sprite->getPositionY() + 20);  // lol
-                        } else {
-                              sprite->setPositionY(sprite->getPositionY() + 10);
-                        }
+                  // AFTER frame update - apply offsets using saved absolute positions to avoid cumulative drift
+                  // save original Y and coin positions if not already saved
+                  if (!layerRef->m_fields->m_originalYSaved) {
+                        layerRef->m_fields->m_originalDifficultySpriteY = sprite->getPositionY();
+                        layerRef->m_fields->m_originalYSaved = true;
+                  }
 
+                  auto coinIcon1 = layerRef->getChildByID("coin-icon-1");
+                  auto coinIcon2 = layerRef->getChildByID("coin-icon-2");
+                  auto coinIcon3 = layerRef->getChildByID("coin-icon-3");
+                  if (!layerRef->m_fields->m_originalCoinsSaved && coinIcon1) {
+                        layerRef->m_fields->m_originalCoin1Y = coinIcon1->getPositionY();
+                        if (coinIcon2) layerRef->m_fields->m_originalCoin2Y = coinIcon2->getPositionY();
+                        if (coinIcon3) layerRef->m_fields->m_originalCoin3Y = coinIcon3->getPositionY();
+                        layerRef->m_fields->m_originalCoinsSaved = true;
+                  }
+
+                  layerRef->m_fields->m_lastAppliedIsDemon = isDemon;
+                  float baseY = layerRef->m_fields->m_originalDifficultySpriteY;
+
+                  if (isDemon) {
+                        float newY = baseY + (coinIcon1 ? 20.f : 10.f);
+                        sprite->setPositionY(newY);
                   } else {
-                        sprite->setPositionY(sprite->getPositionY() + 10);
+                        sprite->setPositionY(baseY + 10.f);
+                  }
+
+                  layerRef->m_fields->m_difficultyOffsetApplied = true;
+
+                  if (coinIcon1) {
+                        int delta = isDemon ? 6 : 4;
+                        coinIcon1->setPositionY(layerRef->m_fields->m_originalCoin1Y - delta);
+                        if (coinIcon2) coinIcon2->setPositionY(layerRef->m_fields->m_originalCoin2Y - delta);
+                        if (coinIcon3) coinIcon3->setPositionY(layerRef->m_fields->m_originalCoin3Y - delta);
                   }
 
                   // Choose icon based on platformer flag: planets for platformer levels
@@ -1179,6 +1223,33 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                                     if (starIcon) starIcon->removeFromParent();
                                     auto starLabel = difficultySprite->getChildByID("rl-star-label");
                                     if (starLabel) starLabel->removeFromParent();
+
+                                    // revert any applied difficulty Y offset and coin shifts
+                                    if (layerRef->m_fields->m_originalYSaved) {
+                                          auto sprite = static_cast<GJDifficultySprite*>(difficultySprite);
+                                          sprite->setPositionY(layerRef->m_fields->m_originalDifficultySpriteY);
+
+                                          auto coinIcon1 = layerRef->getChildByID("coin-icon-1");
+                                          auto coinIcon2 = layerRef->getChildByID("coin-icon-2");
+                                          auto coinIcon3 = layerRef->getChildByID("coin-icon-3");
+                                          // restore coins to original saved positions when available
+                                          if (layerRef->m_fields->m_originalCoinsSaved) {
+                                                if (coinIcon1) coinIcon1->setPositionY(layerRef->m_fields->m_originalCoin1Y);
+                                                if (coinIcon2) coinIcon2->setPositionY(layerRef->m_fields->m_originalCoin2Y);
+                                                if (coinIcon3) coinIcon3->setPositionY(layerRef->m_fields->m_originalCoin3Y);
+                                          } else {
+                                                int delta = layerRef->m_fields->m_lastAppliedIsDemon ? 6 : 4;
+                                                if (coinIcon1) coinIcon1->setPositionY(coinIcon1->getPositionY() + delta);
+                                                if (coinIcon2) coinIcon2->setPositionY(coinIcon2->getPositionY() + delta);
+                                                if (coinIcon3) coinIcon3->setPositionY(coinIcon3->getPositionY() + delta);
+                                          }
+
+                                          // reset flags
+                                          layerRef->m_fields->m_difficultyOffsetApplied = false;
+                                          layerRef->m_fields->m_originalYSaved = false;
+                                          layerRef->m_fields->m_lastAppliedIsDemon = false;
+                                          layerRef->m_fields->m_originalCoinsSaved = false;
+                                    }
                               }
 
                               // also remove from cache to match behavior elsewhere
