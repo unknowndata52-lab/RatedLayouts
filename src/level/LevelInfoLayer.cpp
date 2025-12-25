@@ -407,17 +407,34 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
 
                               if (!Mod::get()->getSettingValue<bool>("disableRewardAnimation")) {
                                     if (auto rewardLayer = CurrencyRewardLayer::create(
-                                            0, difficulty, 0, 0, CurrencySpriteType::Star, 0,
+                                            0, isPlat ? difficulty : 0, isPlat ? 0 : difficulty, 0, CurrencySpriteType::Star, 0,
                                             CurrencySpriteType::Star, 0, difficultySprite->getPosition(),
                                             CurrencyRewardType::Default, 0.0, 1.0)) {
-                                          rewardLayer->m_starsLabel->setString(numToString(displayReward).c_str());
-                                          rewardLayer->m_stars = displayReward;
-                                          rewardLayer->m_starsSprite = CCSprite::create(medSprite.c_str());
+                                          if (isPlat) {
+                                                rewardLayer->m_starsLabel->setString(numToString(displayReward).c_str());
+                                                rewardLayer->m_stars = displayReward;
+                                          } else {
+                                                rewardLayer->m_moonsLabel->setString(numToString(displayReward).c_str());
+                                                rewardLayer->m_moons = displayReward;
+                                          }
 
-                                          if (auto node = rewardLayer->m_mainNode->getChildByType<CCSprite*>(0)) {
-                                                node->setDisplayFrame(
-                                                    CCSprite::create(medSprite.c_str())->displayFrame());
-                                                node->setScale(1.f);
+                                          auto texture = CCTextureCache::sharedTextureCache()->addImage(
+                                                isPlat ? "RL_planetBig.png"_spr : "RL_starBig.png"_spr, false);
+                                          auto displayFrame = CCSpriteFrame::createWithTexture(texture, {{0, 0}, texture->getContentSize()});
+
+                                          if (isPlat) {
+                                                rewardLayer->m_starsSprite->setDisplayFrame(displayFrame);
+                                          } else {
+                                                rewardLayer->m_moonsSprite->setDisplayFrame(displayFrame);
+                                          }
+                                          rewardLayer->m_currencyBatchNode->setTexture(texture);
+
+                                          for (auto sprite : CCArrayExt<CurrencySprite>(rewardLayer->m_objects)) {
+                                                sprite->m_burstSprite->setVisible(false);
+                                                if (auto child = sprite->getChildByIndex(0)) {
+                                                      child->setVisible(false);
+                                                }
+                                                sprite->setDisplayFrame(displayFrame);
                                           }
 
                                           layerRef->addChild(rewardLayer, 100);
@@ -499,6 +516,11 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
             if (difficultySprite2) {
                   auto sprite = static_cast<GJDifficultySprite*>(difficultySprite2);
                   sprite->updateDifficultyFrame(difficultyLevel, GJDifficultyName::Long);
+
+                  if (auto moreDifficultiesSpr = getChildByID("uproxide.more_difficulties/more-difficulties-spr")) {
+                        moreDifficultiesSpr->setVisible(false);
+                        sprite->setOpacity(255);
+                  }
 
                   // Remove existing icon
                   auto existingStarIcon = difficultySprite2->getChildByID("rl-star-icon");
@@ -820,6 +842,11 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
 
                   // update difficulty frame
                   sprite->updateDifficultyFrame(difficultyLevel, GJDifficultyName::Long);
+
+                  if (auto moreDifficultiesSpr = getChildByID("uproxide.more_difficulties/more-difficulties-spr")) {
+                        moreDifficultiesSpr->setVisible(false);
+                        sprite->setOpacity(255);
+                  }
 
                   // AFTER frame update
                   if (isDemon) {

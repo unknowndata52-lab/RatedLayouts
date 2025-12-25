@@ -191,22 +191,37 @@ class $modify(EndLevelLayer) {
                               // some devices crashes from this, idk why soggify
                               if (!Mod::get()->getSettingValue<bool>("disableRewardAnimation")) {
                                     if (auto rewardLayer = CurrencyRewardLayer::create(
-                                            0, starReward, 0, 0, CurrencySpriteType::Star, 0,
+                                            0, isPlat ? starReward : 0, isPlat ? 0 : starReward, 0, CurrencySpriteType::Star, 0,
                                             CurrencySpriteType::Star, 0,
                                             bigStarSprite->getPosition(),
                                             CurrencyRewardType::Default, 0.0, 1.0)) {
                                           // display the calculated stars
-                                          rewardLayer->m_starsLabel->setString(
-                                              numToString(displayStars).c_str());
-                                          rewardLayer->m_stars = displayStars;
-                                          rewardLayer->m_starsSprite = CCSprite::create(medSprite.c_str());
+                                          if (isPlat) {
+                                                rewardLayer->m_starsLabel->setString(numToString(displayStars).c_str());
+                                                rewardLayer->m_stars = displayStars;
+                                          } else {
+                                                rewardLayer->m_moonsLabel->setString(numToString(displayStars).c_str());
+                                                rewardLayer->m_moons = displayStars;
+                                          }
 
                                           // Replace the main display sprite
-                                          if (auto node = rewardLayer->m_mainNode
-                                                              ->getChildByType<CCSprite*>(0)) {
-                                                node->setDisplayFrame(
-                                                    CCSprite::create(medSprite.c_str())->displayFrame());
-                                                node->setScale(1.f);
+                                          auto texture = CCTextureCache::sharedTextureCache()->addImage(
+                                                isPlat ? "RL_planetBig.png"_spr : "RL_starBig.png"_spr, false);
+                                          auto displayFrame = CCSpriteFrame::createWithTexture(texture, {{0, 0}, texture->getContentSize()});
+
+                                          if (isPlat) {
+                                                rewardLayer->m_starsSprite->setDisplayFrame(displayFrame);
+                                          } else {
+                                                rewardLayer->m_moonsSprite->setDisplayFrame(displayFrame);
+                                          }
+                                          rewardLayer->m_currencyBatchNode->setTexture(texture);
+
+                                          for (auto sprite : CCArrayExt<CurrencySprite>(rewardLayer->m_objects)) {
+                                                sprite->m_burstSprite->setVisible(false);
+                                                if (auto child = sprite->getChildByIndex(0)) {
+                                                      child->setVisible(false);
+                                                }
+                                                sprite->setDisplayFrame(displayFrame);
                                           }
 
                                           endLayerRef->addChild(rewardLayer, 100);
