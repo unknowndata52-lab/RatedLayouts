@@ -5,16 +5,15 @@
 - Fixed issue where the sprites on the reward animation is showing the incorrect texture.
 - Fixed issue where the stars/planets reward animation crashes upon completing a level.
 - Fixed issue where Comment Cell isn't fetching the user profile data correctly.
-- Cached rating data is now pruned to only keep necessary fields to reduce cache size.
 - Tweaked the rating difficulty sprite positions to be more consistent.
-- Annoucement button sprite changed to a more button like.
+- Announcement button sprite changed to a more button like.
 
 *Thanks to [hiimjasmine00](https://github.com/hiimjasmine00) for the fixes!*
 
 # v0.3.1-beta.1
 
 - **Added "Classic" Filter** in the Custom Search to filter Classic Rated Layout Levels.
-- **Added Annoucement Button** in the Rated Layouts Creator Layer to view the latest news and updates about Rated Layouts.
+- **Added Announcement Button** in the Rated Layouts Creator Layer to view the latest news and updates about Rated Layouts.
 - Added Planets Collectable count in the Garage Layer.
 - Epic, Featured and Awarded filters are no longer mutually exclusive, you can now select multiple of them at once.
 
