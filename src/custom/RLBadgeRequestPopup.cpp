@@ -1,0 +1,87 @@
+#include "RLBadgeRequestPopup.hpp"
+
+using namespace geode::prelude;
+
+RLBadgeRequestPopup* RLBadgeRequestPopup::create() {
+      auto ret = new RLBadgeRequestPopup();
+      if (ret && ret->initAnchored(420.f, 160.f, "GJ_square04.png")) {
+            ret->autorelease();
+            return ret;
+      }
+      CC_SAFE_DELETE(ret);
+      return nullptr;
+}
+
+bool RLBadgeRequestPopup::setup() {
+      setTitle("Request Layout Supporter Badge");
+
+      auto cs = m_mainLayer->getContentSize();
+
+      m_discordInput = TextInput::create(320.f, "Discord Username");
+      m_discordInput->setCommonFilter(CommonFilter::Any);
+      m_discordInput->setPosition({cs.width / 2.f, cs.height - 50.f});
+      m_mainLayer->addChild(m_discordInput);
+
+      // info text
+      auto infoText = MDTextArea::create(
+          "Enter your <co>Discord username</c> that is linked to your <cp>Ko-fi account</c> to receieve a <cp>Layout Supporter Badge</c>.\n\n"
+          "Make sure that you have <cg>linked</c> your <cb>Discord Account</c> through <cp>Ko-fi.</c>\n\n"
+          "### If you encounter any <cr>issue</c> during this process, please contact <cf>ArcticWoof</c> on <cb>Discord</c>.",
+          {cs.width - 40.f, 60.f});
+      infoText->setPosition({cs.width / 2.f, cs.height - 100.f});
+      infoText->setAnchorPoint({0.5f, 0.5f});
+      infoText->setID("rl-badge-request-info");
+      m_mainLayer->addChild(infoText);
+
+      // submit button
+      auto submitSpr = ButtonSprite::create("Submit", "goldFont.fnt", "GJ_button_01.png");
+      auto submitBtn = CCMenuItemSpriteExtra::create(submitSpr, this, menu_selector(RLBadgeRequestPopup::onSubmit));
+      submitBtn->setPosition({cs.width / 2.f, 0.f});
+      m_buttonMenu->addChild(submitBtn);
+
+      return true;
+}
+
+void RLBadgeRequestPopup::onSubmit(CCObject* sender) {
+      if (!m_discordInput) return;
+      auto discord = m_discordInput->getString();
+      if (discord.empty()) {
+            Notification::create("Please enter your Discord username", NotificationIcon::Error)->show();
+            return;
+      }
+
+      matjson::Value body = matjson::Value::object();
+      body["discordUsername"] = discord;
+      body["argonToken"] = Mod::get()->getSavedValue<std::string>("argon_token");
+      body["accountId"] = GJAccountManager::get()->m_accountID;
+
+      auto req = web::WebRequest();
+      req.bodyJSON(body);
+      Ref<RLBadgeRequestPopup> thisRef = this;
+      req.post("https://gdrate.arcticwoof.xyz/getSupporter").listen([thisRef](web::WebResponse* res) {
+            if (!res) {
+                  Notification::create("Discord Username doesn't exists.", NotificationIcon::Error)->show();
+                  return;
+            }
+
+            auto str = res->string().unwrapOrDefault();
+            if (!str.empty()) {
+                  if (!res->ok()) {
+                        Notification::create(str, NotificationIcon::Error)->show();
+                        return;
+                  }
+                  Notification::create(str, NotificationIcon::Success)->show();
+                  if (thisRef) thisRef->removeFromParent();
+                  return;
+            }
+
+            if (!res->ok()) {
+                  // show status code
+                  Notification::create(fmt::format("Failed to submit request (code {})", res->code()), NotificationIcon::Error)->show();
+                  return;
+            }
+
+            Notification::create("Supporter Badge acquired!", NotificationIcon::Success)->show();
+            if (thisRef) thisRef->removeFromParent();
+      });
+}

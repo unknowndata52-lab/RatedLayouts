@@ -568,7 +568,7 @@ class $modify(RLProfilePage, ProfilePage) {
                 "OK",
                 "Ko-Fi", [this](auto, bool yes) {
                       if (!yes) return;
-                      utils::web::openLinkInBrowser("https://ko-fi.com/arcticwoof");
+                      utils::web::openLinkInBrowser("https://ko-fi.com/summary/a94cdc12-56c9-4cc6-b300-54f8567b4119");
                 });
       }
       void onBlueprintStars(CCObject* sender) {

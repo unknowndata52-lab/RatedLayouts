@@ -9,4 +9,5 @@ class RLDonationPopup : public geode::Popup<> {
      private:
       bool setup() override;
       void onClick(CCObject* sender);
+      void onGetBadge(CCObject* sender);
 };

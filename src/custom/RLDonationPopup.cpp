@@ -1,4 +1,5 @@
 #include "RLDonationPopup.hpp"
+#include "RLBadgeRequestPopup.hpp"
 
 #include <cstdlib>
 #include <ctime>
@@ -84,10 +85,16 @@ bool RLDonationPopup::setup() {
       m_mainLayer->addChild(desc2);
 
       // open kofi link button
-      auto buttonSpr = ButtonSprite::create("Donate via Ko-fi", "goldFont.fnt", "GJ_button_03.png");
-      auto buttonItem = CCMenuItemSpriteExtra::create(buttonSpr, this, menu_selector(RLDonationPopup::onClick));
-      buttonItem->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, 30.f});
-      m_buttonMenu->addChild(buttonItem);
+      auto kofiSpr = ButtonSprite::create("Donate via Ko-fi", "goldFont.fnt", "GJ_button_03.png");
+      auto kofiBtn = CCMenuItemSpriteExtra::create(kofiSpr, this, menu_selector(RLDonationPopup::onClick));
+      kofiBtn->setPosition({m_mainLayer->getContentSize().width / 2.f + 90.f, 30.f});
+      m_buttonMenu->addChild(kofiBtn);
+
+      // badge request button
+      auto getBadgeSpr = ButtonSprite::create("Get Badge?", "goldFont.fnt", "GJ_button_01.png");
+      auto getBadgeBtn = CCMenuItemSpriteExtra::create(getBadgeSpr, this, menu_selector(RLDonationPopup::onGetBadge));
+      getBadgeBtn->setPosition({m_mainLayer->getContentSize().width / 2.f - 120.f, 30.f});
+      m_buttonMenu->addChild(getBadgeBtn);
 
       // floating blocks
       static bool _rl_rain_seeded = false;
@@ -116,7 +123,7 @@ bool RLDonationPopup::setup() {
 
             // fade to low opacity while moving down, then instantly reset position and opacity
             auto moveToEnd = CCMoveTo::create(dur, {startX, endY});
-            auto fadeToEnd = CCFadeTo::create(dur, 10.f); // end opacity = 10
+            auto fadeToEnd = CCFadeTo::create(dur, 10.f);  // end opacity = 10
             auto spawn = CCSpawn::create(moveToEnd, fadeToEnd, nullptr);
             auto placeBack = CCPlace::create({startX, startY});
             auto resetFade = CCFadeTo::create(0.f, static_cast<GLubyte>(spr->getOpacity()));
@@ -133,8 +140,8 @@ bool RLDonationPopup::setup() {
             float rnd = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
             float scale = 0.45f + rnd * 0.6f;  // 0.45 - 1.05
             float x = margin + rnd * (WIDTH_BOUND - margin * 2.f);
-            float rot = -40.f + rnd * 80.f;  // -40..40
-            float alpha = 10.f + rnd * 140.f; // 10..150
+            float rot = -40.f + rnd * 80.f;     // -40..40
+            float alpha = 150.f + rnd * 100.f;  // 150..250
 
             spr->setScale(scale);
             spr->setRotation(rot);
@@ -143,7 +150,7 @@ bool RLDonationPopup::setup() {
 
             // randomized timing and rotation direction
             float minDur = 3.0f + (static_cast<float>(std::rand()) / RAND_MAX) * 3.0f;       // 3 - 6
-            float maxDur = minDur + 10.0f;                                                    // spread
+            float maxDur = minDur + 10.0f;                                                   // spread
             float rotAmount = -60.f + (static_cast<float>(std::rand()) / RAND_MAX) * 120.f;  // -60..60
             float delay = (static_cast<float>(std::rand()) / RAND_MAX) * (minDur);           // staggered start
 
@@ -155,4 +162,9 @@ bool RLDonationPopup::setup() {
 
 void RLDonationPopup::onClick(CCObject* sender) {
       utils::web::openLinkInBrowser("https://ko-fi.com/summary/7134ad95-57b6-4c2c-8ca8-b48b76aeeaae");
+}
+
+void RLDonationPopup::onGetBadge(CCObject* sender) {
+      auto popup = RLBadgeRequestPopup::create();
+      if (popup) popup->show();
 }
