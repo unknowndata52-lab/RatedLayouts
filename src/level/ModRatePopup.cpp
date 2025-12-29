@@ -649,10 +649,10 @@ void ModRatePopup::onSetEventButton(CCObject* sender) {
           "No",
           "Yes",
           [this, type, token](auto, bool yes) {
-                auto popup = UploadActionPopup::create(nullptr, "Setting event...");
-                popup->show();
                 log::info("Popup callback triggered, yes={}", yes);
                 if (!yes) return;
+                auto popup = UploadActionPopup::create(nullptr, "Setting event...");
+                popup->show();
                 matjson::Value jsonBody = matjson::Value::object();
                 jsonBody["accountId"] = GJAccountManager::get()->m_accountID;
                 jsonBody["argonToken"] = token;
