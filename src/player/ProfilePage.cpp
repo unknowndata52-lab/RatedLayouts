@@ -1,383 +1,384 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/ProfilePage.hpp>
 #include <argon/argon.hpp>
+#include <Geode/utils/coro.hpp>
 
 #include "RLDifficultyTotalPopup.hpp"
 #include "RLUserControl.hpp"
 
 using namespace geode::prelude;
 
-// helper functions for caching user roles (local copy to keep file self-contained)
 static std::string getUserRoleCachePath_ProfilePage() {
-      auto saveDir = dirs::getModsSaveDir();
-      return geode::utils::string::pathToString(saveDir / "user_role_cache.json");
+    auto saveDir = dirs::getModsSaveDir();
+    return geode::utils::string::pathToString(saveDir / "user_role_cache.json");
 }
 
 static void cacheUserProfile_ProfilePage(int accountId, int role, int stars, int planets) {
-      auto saveDir = dirs::getModsSaveDir();
-      auto createDirResult = utils::file::createDirectory(saveDir);
-      if (!createDirResult) {
-            log::warn("Failed to create save directory for user role cache");
-            return;
-      }
+    auto saveDir = dirs::getModsSaveDir();
+    auto createDirResult = utils::file::createDirectory(saveDir);
+    if (!createDirResult) {
+        log::warn("Failed to create save directory for user role cache");
+        return;
+    }
 
-      auto cachePath = getUserRoleCachePath_ProfilePage();
+    auto cachePath = getUserRoleCachePath_ProfilePage();
 
-      matjson::Value root = matjson::Value::object();
-      auto existingData = utils::file::readString(cachePath);
-      if (existingData) {
-            auto parsed = matjson::parse(existingData.unwrap());
-            if (parsed) root = parsed.unwrap();
-      }
+    matjson::Value root = matjson::Value::object();
+    auto existingData = utils::file::readString(cachePath);
+    if (existingData) {
+        auto parsed = matjson::parse(existingData.unwrap());
+        if (parsed) root = parsed.unwrap();
+    }
 
-      matjson::Value obj = matjson::Value::object();
-      obj["role"] = role;
-      obj["stars"] = stars;
-      obj["planets"] = planets;
-      root[fmt::format("{}", accountId)] = obj;
+    matjson::Value obj = matjson::Value::object();
+    obj["role"] = role;
+    obj["stars"] = stars;
+    obj["planets"] = planets;
+    root[fmt::format("{}", accountId)] = obj;
 
-      auto jsonString = root.dump();
-      auto writeResult = utils::file::writeString(geode::utils::string::pathToString(cachePath), jsonString);
-      if (writeResult) {
-            log::debug("Cached user role {} for account ID: {} (from ProfilePage)", role, accountId);
-      }
+    auto jsonString = root.dump();
+    auto writeResult = utils::file::writeString(geode::utils::string::pathToString(cachePath), jsonString);
+    if (writeResult) {
+        log::debug("Cached user role {} for account ID: {} (from ProfilePage)", role, accountId);
+    }
 }
 
 class $modify(RLProfilePage, ProfilePage) {
-      struct Fields {
-            CCLabelBMFont* blueprintStarsCount = nullptr;
-            CCLabelBMFont* layoutPointsCount = nullptr;
-            CCLabelBMFont* planetsCount = nullptr;
-            int role = 0;
-            int accountId = 0;
-            bool isSupporter = false;
-      };
+    struct Fields {
+        int role = 0;
+        int accountId = 0;
+        bool isSupporter = false;
 
-      bool init(int accountID, bool ownProfile) {
-            if (!ProfilePage::init(accountID, ownProfile))
-                  return false;
+        int m_points = 0;
+        int m_planets = 0;
+        int m_stars = 0;
+    };
 
-            auto statsMenu = m_mainLayer->getChildByID("stats-menu");
+    CCMenu* createStatEntry(
+        char const* entryID,
+        char const* labelID,
+        std::string const& text,
+        char const* iconFrameOrPath,
+        SEL_MenuHandler iconCallback
+    ) {
+        auto label = CCLabelBMFont::create(text.c_str(), "bigFont.fnt");
+        label->setID(labelID);
+
+        constexpr float kLabelScale = 0.60f;
+        constexpr float kMaxLabelW  = 58.f;
+        constexpr float kMinScale   = 0.20f;
+
+        label->setScale(kLabelScale);
+        label->limitLabelWidth(kMaxLabelW, kLabelScale, kMinScale);
+
+        CCSprite* iconSprite = nullptr;
+        iconSprite = CCSprite::createWithSpriteFrameName(iconFrameOrPath);
+        if (!iconSprite) iconSprite = CCSprite::create(iconFrameOrPath);
+
+        auto iconBtn = CCMenuItemSpriteExtra::create(
+            iconSprite,
+            this,
+            iconCallback
+        );
+
+        auto ls = label->getScaledContentSize();
+        auto is = iconBtn->getScaledContentSize();
+
+        constexpr float gap = 2.f;
+        constexpr float pad = 2.f;
+
+        float h = std::max(ls.height, is.height);
+        float w = pad + ls.width + gap + is.width + pad;
+
+        auto entry = CCMenu::create();
+        entry->setID(entryID);
+        entry->setContentSize({ w, h });
+        entry->setAnchorPoint({ 0.f, 0.5f });
+
+        label->setAnchorPoint({ 0.f, 0.5f });
+        label->setPosition({ pad, h / 2.f });
+
+        iconBtn->setAnchorPoint({ 0.f, 0.5f });
+        iconBtn->setPosition({ pad + ls.width + gap, h / 2.f });
+
+        entry->addChild(label);
+        entry->addChild(iconBtn);
+
+        return entry;
+    }
+
+    void updateStatLabel(char const* labelID, std::string const& text) {
+        auto rlStatsMenu = getChildByIDRecursive("rl-stats-menu");
+        if (!rlStatsMenu) return;
+
+        auto label = typeinfo_cast<CCLabelBMFont*>(rlStatsMenu->getChildByIDRecursive(labelID));
+        if (!label) return;
+
+        label->setString(text.c_str());
+
+        constexpr float kLabelScale = 0.60f;
+        constexpr float kMaxLabelW  = 58.f;
+        constexpr float kMinScale   = 0.20f;
+        label->limitLabelWidth(kMaxLabelW, kLabelScale, kMinScale);
+    }
+
+    bool init(int accountID, bool ownProfile) {
+        if (!ProfilePage::init(accountID, ownProfile))
+            return false;
+
+        if (auto statsMenu = m_mainLayer->getChildByID("stats-menu")) {
             statsMenu->updateLayout();
+        }
+        return true;
+    }
 
-            return true;
-      }
+    void loadPageFromUserInfo(GJUserScore* score) {
+        ProfilePage::loadPageFromUserInfo(score);
 
-      void getUserInfoFinished(GJUserScore* score) {
-            ProfilePage::getUserInfoFinished(score);
+        auto statsMenu = m_mainLayer->getChildByID("stats-menu");
+        if (!statsMenu) {
+            log::warn("stats-menu not found");
+            return;
+        }
 
-            // find the stats menu
-            // im trying to recreate how robtop adds the stats in the menu
-            // very hacky way to do it but oh well
-            auto statsMenu = m_mainLayer->getChildByID("stats-menu");
-            if (!statsMenu) {
-                  log::warn("stats-menu not found");
-                  return;
+        if (auto rlStatsBtnFound = getChildByIDRecursive("rl-stats-btn")) rlStatsBtnFound->removeFromParent();
+        if (auto rlStatsMenuFound = getChildByIDRecursive("rl-stats-menu")) rlStatsMenuFound->removeFromParent();
+
+        auto leftMenu = getChildByIDRecursive("left-menu");
+        if (!leftMenu) {
+            log::warn("left-menu not found");
+            return;
+        }
+
+        auto rlStatsSpr   = CCSprite::create("GJ_button_04.png");
+        auto rlStatsSprOn = CCSprite::create("GJ_button_02.png");
+
+        auto rlSprA = CCSprite::create("RL_planetMed.png"_spr);
+        auto rlSprB = CCSprite::create("RL_planetMed.png"_spr);
+        rlSprA->setPosition({ 20.f, 20.f });
+        rlSprB->setPosition({ 20.f, 20.f });
+
+        rlStatsSpr->addChild(rlSprA);
+        rlStatsSprOn->addChild(rlSprB);
+
+        rlStatsSpr->setScale(0.8f);
+        rlStatsSprOn->setScale(0.8f);
+
+        auto rlStatsBtn = CCMenuItemToggler::create(
+            rlStatsSpr,
+            rlStatsSprOn,
+            this,
+            menu_selector(RLProfilePage::onStatsSwitcher)
+        );
+        rlStatsBtn->setID("rl-stats-btn");
+        leftMenu->addChild(rlStatsBtn);
+
+        auto rlStatsMenu = CCMenu::create();
+        rlStatsMenu->setID("rl-stats-menu");
+        rlStatsMenu->setContentSize({200.f, 20.f});
+
+        auto row = RowLayout::create();
+        row->setAxisAlignment(AxisAlignment::Center);
+        row->setCrossAxisAlignment(AxisAlignment::Center);
+        row->setGap(4.f);
+        rlStatsMenu->setLayout(row);
+
+        rlStatsMenu->setAnchorPoint({ 0.5f, 0.5f });
+
+        rlStatsMenu->setPositionY(245.f);
+
+        auto starsText   = GameToolbox::pointsToString(m_fields->m_stars);
+        auto planetsText = GameToolbox::pointsToString(m_fields->m_planets);
+
+        auto starsEntry = createStatEntry(
+            "rl-stars-entry",
+            "rl-stars-label",
+            starsText,
+            "RL_starMed.png"_spr,
+            menu_selector(RLProfilePage::onBlueprintStars)
+        );
+
+        auto planetsEntry = createStatEntry(
+            "rl-planets-entry",
+            "rl-planets-label",
+            planetsText,
+            "RL_planetMed.png"_spr,
+            menu_selector(RLProfilePage::onPlanetsClicked)
+        );
+
+        rlStatsMenu->addChild(starsEntry);
+        rlStatsMenu->addChild(planetsEntry);
+
+        rlStatsMenu->setVisible(false);
+        statsMenu->setVisible(true);
+
+        m_mainLayer->addChild(rlStatsMenu);
+
+        if (score) {
+            coro::spawn << fetchProfileDataTask(score->m_accountID);
+        }
+
+        rlStatsMenu->updateLayout();
+
+        statsMenu->updateLayout();
+        leftMenu->updateLayout();
+    }
+
+    void onStatsSwitcher(CCObject* sender) {
+        auto statsMenu = getChildByIDRecursive("stats-menu");
+        auto rlStatsMenu = getChildByIDRecursive("rl-stats-menu");
+        auto switcher = typeinfo_cast<CCMenuItemToggler*>(sender);
+
+        if (!statsMenu || !rlStatsMenu || !switcher) return;
+
+        if (!switcher->isToggled()) {
+            statsMenu->setVisible(false);
+            if (auto m = typeinfo_cast<CCMenu*>(statsMenu)) m->setEnabled(false);
+
+            rlStatsMenu->setVisible(true);
+            if (auto m = typeinfo_cast<CCMenu*>(rlStatsMenu)) m->setEnabled(true);
+        } else {
+            statsMenu->setVisible(true);
+            if (auto m = typeinfo_cast<CCMenu*>(statsMenu)) m->setEnabled(true);
+
+            rlStatsMenu->setVisible(false);
+            if (auto m = typeinfo_cast<CCMenu*>(rlStatsMenu)) m->setEnabled(false);
+        }
+    }
+
+    geode::Task<void> fetchProfileDataTask(int accountId) {
+        log::info("Fetching profile data for account ID: {}", accountId);
+        m_fields->accountId = accountId;
+
+        std::string token;
+        auto res = argon::startAuth(
+            [](Result<std::string> res) {
+                if (!res) {
+                    log::warn("Auth failed: {}", res.unwrapErr());
+                    return;
+                }
+                auto token = std::move(res).unwrap();
+                log::debug("token obtained: {}", token);
+                Mod::get()->setSavedValue("argon_token", token);
+            },
+            [](argon::AuthProgress progress) {
+                log::debug("auth progress: {}", argon::authProgressToString(progress));
+            }
+        );
+        if (!res) {
+            log::warn("Failed to start auth attempt: {}", res.unwrapErr());
+            co_return;
+        }
+
+        matjson::Value jsonBody = matjson::Value::object();
+        jsonBody["argonToken"] = Mod::get()->getSavedValue<std::string>("argon_token");
+        jsonBody["accountId"] = accountId;
+
+        auto req = web::WebRequest();
+        req.bodyJSON(jsonBody);
+
+        auto response = co_await req.post("https://gdrate.arcticwoof.xyz/profile");
+        if (!response.ok()) {
+            log::warn("Server returned non-ok status");
+            co_return;
+        }
+
+        auto jsonRes = response.json();
+        if (!jsonRes) {
+            log::warn("Failed to parse JSON response");
+            co_return;
+        }
+
+        auto json = jsonRes.unwrap();
+        int points = json["points"].asInt().unwrapOrDefault();
+        int stars = json["stars"].asInt().unwrapOrDefault();
+        int role = json["role"].asInt().unwrapOrDefault();
+        int planets = json["planets"].asInt().unwrapOrDefault();
+        bool isSupporter = json["isSupporter"].asBool().unwrapOrDefault();
+
+        m_fields->m_stars = stars;
+        m_fields->m_planets = planets;
+        m_fields->m_points = points;
+
+        m_fields->role = role;
+        m_fields->isSupporter = isSupporter;
+
+        log::info("Profile data - points: {}, stars: {}, planets: {}, supporter: {}", points, stars, planets, isSupporter);
+
+        cacheUserProfile_ProfilePage(m_fields->accountId, role, stars, planets);
+
+        if (m_ownProfile) {
+            Mod::get()->setSavedValue("role", m_fields->role);
+        }
+
+        updateStatLabel("rl-stars-label", GameToolbox::pointsToString(m_fields->m_stars));
+        updateStatLabel("rl-planets-label", GameToolbox::pointsToString(m_fields->m_planets));
+        
+        auto pointsText  = GameToolbox::pointsToString(m_fields->m_points);
+
+            auto pointsEntry = createStatEntry(
+                "rl-points-entry",
+                "rl-points-label",
+                pointsText,
+                "RL_blueprintPoint01.png"_spr,
+                menu_selector(RLProfilePage::onLayoutPointsClicked)
+            );
+
+            auto rlStatsMenu = getChildByIDRecursive("rl-stats-menu");
+
+            if (points > 0) {
+                  rlStatsMenu->addChild(pointsEntry);
             }
 
-            auto blueprintStarsContainer = statsMenu->getChildByID("blueprint-stars-container");
-            auto planetsContainer = statsMenu->getChildByID("planets-container");
-            auto layoutPointsContainer = statsMenu->getChildByID("layout-points-container");
-            auto blueprintStars = statsMenu->getChildByID("blueprint-stars-icon");
-            auto planetsIcon = statsMenu->getChildByID("planets-icon");
-            auto layoutPoints = statsMenu->getChildByID("layout-points-icon");
+        if (rlStatsMenu) {
+            for (auto entryID : { "rl-stars-entry", "rl-planets-entry", "rl-points-entry" }) {
+                auto entry = typeinfo_cast<CCMenu*>(rlStatsMenu->getChildByIDRecursive(entryID));
+                if (!entry) continue;
 
-            if (blueprintStarsContainer || layoutPointsContainer || planetsContainer) {
-                  if (blueprintStarsContainer) blueprintStarsContainer->removeFromParent();
-                  if (planetsContainer) planetsContainer->removeFromParent();
-                  if (planetsIcon) planetsIcon->removeFromParent();
-                  if (blueprintStars) blueprintStars->removeFromParent();
-                  if (layoutPointsContainer) layoutPointsContainer->removeFromParent();
-                  if (layoutPoints) layoutPoints->removeFromParent();
-                  log::info("recreating containers");
+                auto label = typeinfo_cast<CCLabelBMFont*>(entry->getChildByIDRecursive(
+                    std::string(entryID) == "rl-stars-entry" ? "rl-stars-label" :
+                    std::string(entryID) == "rl-planets-entry" ? "rl-planets-label" :
+                                                               "rl-points-label"
+                ));
+                auto iconBtn = typeinfo_cast<CCMenuItemSpriteExtra*>(entry->getChildren()->objectAtIndex(1));
+
+                if (!label || !iconBtn) continue;
+
+                auto ls = label->getScaledContentSize();
+                auto is = iconBtn->getScaledContentSize();
+
+                constexpr float gap = 2.f;
+                constexpr float pad = 2.f;
+
+                float h = std::max(ls.height, is.height);
+                float w = pad + ls.width + gap + is.width + pad;
+
+                entry->setContentSize({ w, h });
+
+                label->setPosition({ pad, h / 2.f });
+                iconBtn->setPosition({ pad + ls.width + gap, h / 2.f });
             }
 
-            auto blueprintStarsCount =
-                CCLabelBMFont::create(numToString(0).c_str(), "bigFont.fnt");
-            blueprintStarsCount->setID("label");
-            blueprintStarsCount->setAnchorPoint({1.f, .5f});
-
-            limitNodeSize(blueprintStarsCount, {blueprintStarsCount->getContentSize()},
-                          .7f,
-                          .1f);  // geode limit node size thingy blep
-
-            // Ensure label fits inside max width (50.f)
-            const float maxWidth = 50.f;
-            float origWidth = blueprintStarsCount->getContentSize().width;
-            float currentScale = blueprintStarsCount->getScaleX();
-            float desiredScale = std::min(currentScale, maxWidth / std::max(1.0f, origWidth));
-            blueprintStarsCount->setScale(desiredScale);
-
-            auto container = CCNode::create();
-            float bsWidth = origWidth * blueprintStarsCount->getScaleX();
-            if (bsWidth > maxWidth) bsWidth = maxWidth;
-            container->setContentSize({bsWidth, 19.5f});
-            container->setID("blueprint-stars-container");
-
-            container->addChildAtPosition(blueprintStarsCount, Anchor::Right);
-            container->setAnchorPoint({1.f, .5f});
-            statsMenu->addChild(container);
-
-            if (!blueprintStars) {
-                  auto blueprintSprite = CCSprite::create("RL_starMed.png"_spr);
-                  if (blueprintSprite) {
-                        blueprintSprite->setScale(1.0f);
-                        auto blueprintButton = CCMenuItemSpriteExtra::create(
-                            blueprintSprite, this, menu_selector(RLProfilePage::onBlueprintStars));
-                        blueprintButton->setID("blueprint-stars-icon");
-                        if (auto statsMenuAsMenu = typeinfo_cast<CCMenu*>(statsMenu)) {
-                              statsMenuAsMenu->addChild(blueprintButton);
-                        } else {
-                              auto btnMenu = CCMenu::create();
-                              btnMenu->setPosition({0, 0});
-                              btnMenu->addChild(blueprintButton);
-                              statsMenu->addChild(btnMenu);
-                        }
-                  }
+            auto betterProgSign = getChildByIDRecursive("itzkiba.better_progression/tier-bar");
+            if (betterProgSign) {
+                rlStatsMenu->setScale(0.845f);
+                rlStatsMenu->setPosition({309.f, 248.f});
             }
 
-            m_fields->blueprintStarsCount = nullptr;
-            m_fields->layoutPointsCount = nullptr;
+            rlStatsMenu->updateLayout();
+        }
 
-            if (score) {
-                  fetchProfileData(score->m_accountID);
-            }
-
-            statsMenu->updateLayout();
-      }
-
-      void fetchProfileData(int accountId) {
-            log::info("Fetching profile data for account ID: {}", accountId);
-            m_fields->accountId = accountId;
-
-            auto statsMenu = m_mainLayer->getChildByID("stats-menu");
-
-            // argon my beloved <3
-            std::string token;
-            auto res = argon::startAuth(
-                [](Result<std::string> res) {
-                      if (!res) {
-                            log::warn("Auth failed: {}", res.unwrapErr());
-                            return;
-                      }
-                      auto token = std::move(res).unwrap();
-                      log::debug("token obtained: {}", token);
-                      Mod::get()->setSavedValue("argon_token", token);
-                },
-                [](argon::AuthProgress progress) {
-                      log::debug("auth progress: {}",
-                                 argon::authProgressToString(progress));
-                });
-            if (!res) {
-                  log::warn("Failed to start auth attempt: {}", res.unwrapErr());
-                  return;
-            }
-
-            matjson::Value jsonBody = matjson::Value::object();
-            jsonBody["argonToken"] =
-                Mod::get()->getSavedValue<std::string>("argon_token");
-            jsonBody["accountId"] = accountId;
-
-            // web request
-            auto postReq = web::WebRequest();
-            postReq.bodyJSON(jsonBody);
-            auto postTask = postReq.post("https://gdrate.arcticwoof.xyz/profile");
-
-            Ref<RLProfilePage> pageRef = this;
-
-            // Handle the response
-            postTask.listen([pageRef, statsMenu, this](web::WebResponse* response) {
-                  log::info("Received response from server");
-
-                  if (!pageRef || !pageRef->m_mainLayer) {
-                        log::warn(
-                            "ProfilePage has been destroyed, skipping profile data "
-                            "update");
-                        return;
-                  }
-
-                  if (!response->ok()) {
-                        log::warn("Server returned non-ok status: {}", response->code());
-                        return;
-                  }
-
-                  auto jsonRes = response->json();
-                  if (!jsonRes) {
-                        log::warn("Failed to parse JSON response");
-                        return;
-                  }
-
-                  auto json = jsonRes.unwrap();
-                  int points = json["points"].asInt().unwrapOrDefault();
-                  int stars = json["stars"].asInt().unwrapOrDefault();
-                  int role = json["role"].asInt().unwrapOrDefault();
-                  int planets = json["planets"].asInt().unwrapOrDefault();
-                  bool isSupporter = json["isSupporter"].asBool().unwrapOrDefault();
-
-                  log::info("Profile data - points: {}, stars: {} supporter: {}", points, stars, isSupporter);
-
-                  // store the values into the saved value
-                  pageRef->m_fields->role = role;
-                  pageRef->m_fields->isSupporter = isSupporter;
-
-                  cacheUserProfile_ProfilePage(pageRef->m_fields->accountId, role, stars, planets);
-
-                  // existing stats containers, this is so hacky but wanted to keep it
-                  // at the right side
-                  auto blueprintStarsContainer =
-                      statsMenu->getChildByID("blueprint-stars-container");
-                  auto blueprintStarsIcon = statsMenu->getChildByID("blueprint-stars-icon");
-                  auto layoutPointsContainer =
-                      statsMenu->getChildByID("layout-points-container");
-                  auto layoutPointsIcon = statsMenu->getChildByID("layout-points-icon");
-
-                  if (blueprintStarsContainer)
-                        blueprintStarsContainer->removeFromParent();
-                  if (blueprintStarsIcon)
-                        blueprintStarsIcon->removeFromParent();
-                  if (layoutPointsContainer)
-                        layoutPointsContainer->removeFromParent();
-                  if (layoutPointsIcon)
-                        layoutPointsIcon->removeFromParent();
-
-                  // label stuff
-                  auto blueprintStarsCount =
-                      CCLabelBMFont::create(numToString(GameToolbox::pointsToString(stars)).c_str(), "bigFont.fnt");
-                  blueprintStarsCount->setID("label");
-                  blueprintStarsCount->setAnchorPoint({1.f, .5f});
-                  limitNodeSize(blueprintStarsCount,
-                                {blueprintStarsCount->getContentSize()}, .7f, .1f);
-
-                  // Ensure label fits inside max width (50.f)
-                  const float maxWidth = 50.f;
-                  float origWidth = blueprintStarsCount->getContentSize().width;
-                  float currentScale = blueprintStarsCount->getScaleX();
-                  float desiredScale = std::min(currentScale, maxWidth / std::max(1.0f, origWidth));
-                  blueprintStarsCount->setScale(desiredScale);
-
-                  auto container = CCNode::create();
-                  float bsWidth = origWidth * blueprintStarsCount->getScaleX();
-                  if (bsWidth > maxWidth) bsWidth = maxWidth;
-                  container->setContentSize({bsWidth, 19.5f});
-                  container->setID("blueprint-stars-container");
-                  container->addChildAtPosition(blueprintStarsCount, Anchor::Right);
-                  container->setAnchorPoint({1.f, .5f});
-                  statsMenu->addChild(container);
-
-                  auto blueprintStars = CCSprite::create("RL_starMed.png"_spr);
-                  if (blueprintStars) {
-                        blueprintStars->setScale(1.0f);
-                        auto blueprintButton = CCMenuItemSpriteExtra::create(
-                            blueprintStars, pageRef, menu_selector(RLProfilePage::onBlueprintStars));
-                        blueprintButton->setID("blueprint-stars-icon");
-                        if (auto statsMenuAsMenu = typeinfo_cast<CCMenu*>(statsMenu)) {
-                              statsMenuAsMenu->addChild(blueprintButton);
-                        } else {
-                              auto btnMenu = CCMenu::create();
-                              btnMenu->setPosition({0, 0});
-                              btnMenu->addChild(blueprintButton);
-                              statsMenu->addChild(btnMenu);
-                        }
-                  }
-
-                  // planets
-                  auto planetsCount = CCLabelBMFont::create(numToString(GameToolbox::pointsToString(planets)).c_str(), "bigFont.fnt");
-                  planetsCount->setID("label");
-                  planetsCount->setAnchorPoint({1.f, .5f});
-                  limitNodeSize(planetsCount, {planetsCount->getContentSize()}, .7f, .1f);
-
-                  // Ensure label fits inside max width (50.f)
-                  const float maxWidthPlanets = 50.f;
-                  float origPWidth = planetsCount->getContentSize().width;
-                  float currentPScale = planetsCount->getScaleX();
-                  float desiredPScale = std::min(currentPScale, maxWidthPlanets / std::max(1.0f, origPWidth));
-                  planetsCount->setScale(desiredPScale);
-
-                  auto planetsContainer = CCNode::create();
-                  float pWidth = origPWidth * planetsCount->getScaleX();
-                  if (pWidth > maxWidthPlanets) pWidth = maxWidthPlanets;
-                  planetsContainer->setContentSize({pWidth, 19.5f});
-                  planetsContainer->setID("planets-container");
-                  planetsContainer->addChildAtPosition(planetsCount, Anchor::Right);
-                  planetsContainer->setAnchorPoint({1.f, .5f});
-                  statsMenu->addChild(planetsContainer);
-
-                  // planets icon
-                  auto planetsSprite = CCSprite::create("RL_planetMed.png"_spr);
-                  if (planetsSprite) {
-                        planetsSprite->setScale(1.0f);
-                        auto planetsButton = CCMenuItemSpriteExtra::create(planetsSprite, pageRef, menu_selector(RLProfilePage::onPlanetsClicked));
-                        planetsButton->setID("planets-icon");
-                        if (auto statsMenuAsMenu = typeinfo_cast<CCMenu*>(statsMenu)) {
-                              statsMenuAsMenu->addChild(planetsButton);
-                        } else {
-                              auto btnMenu = CCMenu::create();
-                              btnMenu->setPosition({0, 0});
-                              btnMenu->addChild(planetsButton);
-                              statsMenu->addChild(btnMenu);
-                        }
-                  }
-
-                  pageRef->m_fields->planetsCount = planetsCount;
-
-                  bool disableCreatorPoints = Mod::get()->getSettingValue<bool>("disableCreatorPoints");
-                  if (!disableCreatorPoints && points > 0) {
-                        auto layoutPointsCount =
-                            CCLabelBMFont::create(numToString(GameToolbox::pointsToString(points)).c_str(), "bigFont.fnt");
-                        layoutPointsCount->setID("label");
-                        layoutPointsCount->setAnchorPoint({1.f, .5f});
-                        limitNodeSize(layoutPointsCount, {layoutPointsCount->getContentSize()},
-                                      .7f, .1f);
-
-                        // Ensure layout points label fits inside max width (50.f)
-                        const float maxWidth = 50.f;
-                        float origLpWidth = layoutPointsCount->getContentSize().width;
-                        float currentLpScale = layoutPointsCount->getScaleX();
-                        float desiredLpScale = std::min(currentLpScale, maxWidth / std::max(1.0f, origLpWidth));
-                        layoutPointsCount->setScale(desiredLpScale);
-
-                        auto layoutContainer = CCNode::create();
-                        float lpWidth = origLpWidth * layoutPointsCount->getScaleX();
-                        if (lpWidth > maxWidth) lpWidth = maxWidth;
-                        layoutContainer->setContentSize({lpWidth, 19.5f});
-                        layoutContainer->setID("layout-points-container");
-                        layoutContainer->addChildAtPosition(layoutPointsCount, Anchor::Right);
-                        layoutContainer->setAnchorPoint({1.f, .5f});
-                        statsMenu->addChild(layoutContainer);
-
-                        auto layoutIcon = CCSprite::create("RL_blueprintPoint01.png"_spr);
-                        if (layoutIcon) {
-                              layoutIcon->setScale(1.0f);
-                              auto layoutButton = CCMenuItemSpriteExtra::create(layoutIcon, pageRef, menu_selector(RLProfilePage::onLayoutPointsClicked));
-                              layoutButton->setID("layout-points-icon");
-                              if (auto statsMenuAsMenu = typeinfo_cast<CCMenu*>(statsMenu)) {
-                                    statsMenuAsMenu->addChild(layoutButton);
-                              } else {
-                                    auto btnMenu = CCMenu::create();
-                                    btnMenu->setPosition({0, 0});
-                                    btnMenu->addChild(layoutButton);
-                                    statsMenu->addChild(btnMenu);
-                              }
-                        }
-
-                        pageRef->m_fields->layoutPointsCount = layoutPointsCount;
-                  } else {
-                        pageRef->m_fields->layoutPointsCount = nullptr;
-                  }
-
-                  statsMenu->updateLayout();
-
-                  // add a user manage button if the user accessing it is a mod or an admin
+        // add a user manage button if the user accessing it is a mod or an admin
                   if (Mod::get()->getSavedValue<int>("role", 0) >= 1) {
                         auto leftMenu = static_cast<CCMenu*>(
-                            pageRef->m_mainLayer->getChildByIDRecursive("left-menu"));
+                            m_mainLayer->getChildByIDRecursive("left-menu"));
                         if (leftMenu && !leftMenu->getChildByID("rl-user-manage")) {
                               auto hammerSprite = CCSprite::create("RL_blueprintPoint01.png"_spr);
                               auto circleButtonSprite = CircleButtonSprite::create(
                                   hammerSprite, CircleBaseColor::DarkAqua, CircleBaseSize::Small);
                               circleButtonSprite->setScale(0.875f);
                               auto userButton = CCMenuItemSpriteExtra::create(
-                                  circleButtonSprite, pageRef, menu_selector(RLProfilePage::onUserManage));
+                                  circleButtonSprite, this, menu_selector(RLProfilePage::onUserManage));
                               userButton->setID("rl-user-manage");
                               leftMenu->addChild(userButton);
                               leftMenu->updateLayout();
@@ -385,196 +386,269 @@ class $modify(RLProfilePage, ProfilePage) {
                   }
 
                   // only set saved data if you own the profile
-                  if (pageRef->m_ownProfile) {
-                        Mod::get()->setSavedValue("role", pageRef->m_fields->role);
+                  if (m_ownProfile) {
+                        Mod::get()->setSavedValue("role", m_fields->role);
                   }
 
-                  pageRef->loadBadgeFromUserInfo();
-            });
-      }
-      void onUserManage(CCObject* sender) {
-            int accountId = m_fields->accountId;
-            auto userControl = RLUserControl::create(accountId);
-            userControl->show();
-      }
+        loadBadgeFromUserInfo();
 
-      void onPlanetsClicked(CCObject* sender) {
-            int accountId = m_fields->accountId;
-            auto popup = RLDifficultyTotalPopup::create(accountId, RLDifficultyTotalPopup::Mode::Planets);
-            if (popup) popup->show();
-      }
+        co_return;
+    }
 
-      void onLayoutPointsClicked(CCObject* sender) {
-            // disable button when clicked
-            auto menuItem = typeinfo_cast<CCMenuItemSpriteExtra*>(sender);
-            if (menuItem) menuItem->setEnabled(false);
+    void fetchProfileData(int accountId) {
+        log::info("Fetching profile data for account ID: {}", accountId);
+        m_fields->accountId = accountId;
 
-            int accountId = m_fields->accountId;
-            log::info("Fetching account levels for account ID: {}", accountId);
+        // argon my beloved <3
+        std::string token;
+        auto res = argon::startAuth(
+            [](Result<std::string> res) {
+                if (!res) {
+                    log::warn("Auth failed: {}", res.unwrapErr());
+                    return;
+                }
+                auto token = std::move(res).unwrap();
+                log::debug("token obtained: {}", token);
+                Mod::get()->setSavedValue("argon_token", token);
+            },
+            [](argon::AuthProgress progress) {
+                log::debug("auth progress: {}", argon::authProgressToString(progress));
+            }
+        );
+        if (!res) {
+            log::warn("Failed to start auth attempt: {}", res.unwrapErr());
+            return;
+        }
 
-            auto task = web::WebRequest().param("accountId", accountId).get("https://gdrate.arcticwoof.xyz/getAccountLevels");
+        matjson::Value jsonBody = matjson::Value::object();
+        jsonBody["argonToken"] = Mod::get()->getSavedValue<std::string>("argon_token");
+        jsonBody["accountId"] = accountId;
 
-            Ref<RLProfilePage> pageRef = this;
+        auto postReq = web::WebRequest();
+        postReq.bodyJSON(jsonBody);
 
-            task.listen([pageRef, menuItem](web::WebResponse* res) {
-                  if (!pageRef) return;
-                  if (!res || !res->ok()) {
-                        Notification::create("Failed to fetch account levels", NotificationIcon::Error)->show();
-                        menuItem->setEnabled(true);
-                        return;
-                  }
+        auto postTask = postReq.post("https://gdrate.arcticwoof.xyz/profile");
+        Ref<RLProfilePage> pageRef = this;
 
-                  auto jsonRes = res->json();
-                  if (!jsonRes) {
-                        Notification::create("Invalid server response", NotificationIcon::Error)->show();
-                        menuItem->setEnabled(true);
-                        return;
-                  }
+        postTask.listen([pageRef, this](web::WebResponse* response) {
+            log::info("Received response from server");
 
-                  auto json = jsonRes.unwrap();
-                  std::string levelIDs;
-                  bool first = true;
-                  if (json.contains("levels") && json["levels"].isArray()) {
-                        log::info("getAccountLevels: using 'levels' array");
-                        auto arr = json["levels"].asArray().unwrap();
-                        for (auto v : arr) {
-                              auto id = v.as<int>();
-                              if (!id) continue;
-                              if (!first) levelIDs += ",";
-                              levelIDs += numToString(id.unwrap());
-                              first = false;
-                        }
-                  } else if (json.contains("levelIds") && json["levelIds"].isArray()) {
-                        log::info("getAccountLevels: using 'levelIds' array");
-                        auto arr = json["levelIds"].asArray().unwrap();
-                        for (auto v : arr) {
-                              auto id = v.as<int>();
-                              if (!id) continue;
-                              if (!first) levelIDs += ",";
-                              levelIDs += numToString(id.unwrap());
-                              first = false;
-                        }
-                  }
-
-                  if (!levelIDs.empty()) {
-                        menuItem->setEnabled(true);
-                        auto searchObject = GJSearchObject::create(SearchType::Type19, levelIDs);
-                        auto browserLayer = LevelBrowserLayer::create(searchObject);
-                        auto scene = CCScene::create();
-                        scene->addChild(browserLayer);
-                        auto transitionFade = CCTransitionFade::create(0.5f, scene);
-                        CCDirector::sharedDirector()->pushScene(transitionFade);
-                  } else {
-                        Notification::create("No levels found for this account", NotificationIcon::Warning)->show();
-                        menuItem->setEnabled(true);
-                  }
-            });
-      }
-
-      // badge
-      void loadPageFromUserInfo(GJUserScore* a2) {
-            ProfilePage::loadPageFromUserInfo(a2);
-      }
-
-      void loadBadgeFromUserInfo() {
-            auto userNameMenu = typeinfo_cast<CCMenu*>(
-                m_mainLayer->getChildByIDRecursive("username-menu"));
-            if (!userNameMenu) {
-                  log::warn("username-menu not found");
-                  return;
+            if (!pageRef || !pageRef->m_mainLayer) {
+                log::warn("ProfilePage has been destroyed, skipping profile data update");
+                return;
             }
 
-            // supporter badge (show for any profile that is a supporter)
-            if (m_fields->isSupporter) {
-                  if (!userNameMenu->getChildByID("rl-supporter-badge")) {
-                        auto supporterSprite = CCSprite::create("RL_badgeSupporter.png"_spr);
-                        auto supporterButton = CCMenuItemSpriteExtra::create(supporterSprite, this, menu_selector(RLProfilePage::onSupporterBadge));
-                        supporterButton->setID("rl-supporter-badge");
-                        userNameMenu->addChild(supporterButton);
-                  }
+            if (!response->ok()) {
+                log::warn("Server returned non-ok status: {}", response->code());
+                return;
             }
 
-            if (m_accountID == 7689052) {  // ArcticWoof exception
-                  if (userNameMenu->getChildByID("rl-owner-badge")) {
-                        return;
-                  }
-                  if (auto mod = userNameMenu->getChildByID("rl-mod-badge")) mod->removeFromParent();
-                  if (auto admin = userNameMenu->getChildByID("rl-admin-badge")) admin->removeFromParent();
-
-                  auto ownerBadgeSprite = CCSprite::create("RL_badgeOwner.png"_spr);
-                  auto ownerBadgeButton = CCMenuItemSpriteExtra::create(
-                      ownerBadgeSprite, this, menu_selector(RLProfilePage::onOwnerBadge));
-                  ownerBadgeButton->setID("rl-owner-badge");
-                  userNameMenu->addChild(ownerBadgeButton);
-            } else if (m_fields->role == 1) {
-                  if (userNameMenu->getChildByID("rl-mod-badge")) {
-                        return;
-                  }
-                  if (auto owner = userNameMenu->getChildByID("rl-owner-badge")) owner->removeFromParent();
-                  if (auto admin = userNameMenu->getChildByID("rl-admin-badge")) admin->removeFromParent();
-
-                  auto modBadgeSprite = CCSprite::create("RL_badgeMod01.png"_spr);
-                  auto modBadgeButton = CCMenuItemSpriteExtra::create(
-                      modBadgeSprite, this, menu_selector(RLProfilePage::onModBadge));
-
-                  modBadgeButton->setID("rl-mod-badge");
-                  userNameMenu->addChild(modBadgeButton);
-                  userNameMenu->updateLayout();
-            } else if (m_fields->role == 2) {
-                  if (userNameMenu->getChildByID("rl-admin-badge")) {
-                        log::info("Admin badge already exists, skipping creation");
-                        return;
-                  }
-                  if (auto owner = userNameMenu->getChildByID("rl-owner-badge")) owner->removeFromParent();
-                  if (auto mod = userNameMenu->getChildByID("rl-mod-badge")) mod->removeFromParent();
-                  auto adminBadgeSprite = CCSprite::create("RL_badgeAdmin01.png"_spr);
-                  auto adminBadgeButton = CCMenuItemSpriteExtra::create(
-                      adminBadgeSprite, this, menu_selector(RLProfilePage::onAdminBadge));
-                  adminBadgeButton->setID("rl-admin-badge");
-                  userNameMenu->addChild(adminBadgeButton);
-                  userNameMenu->updateLayout();
+            auto jsonRes = response->json();
+            if (!jsonRes) {
+                log::warn("Failed to parse JSON response");
+                return;
             }
+
+            auto json = jsonRes.unwrap();
+            int points = json["points"].asInt().unwrapOrDefault();
+            int stars = json["stars"].asInt().unwrapOrDefault();
+            int role = json["role"].asInt().unwrapOrDefault();
+            int planets = json["planets"].asInt().unwrapOrDefault();
+            bool isSupporter = json["isSupporter"].asBool().unwrapOrDefault();
+
+            m_fields->m_stars = stars;
+            m_fields->m_planets = planets;
+            m_fields->m_points = points;
+
+            pageRef->m_fields->role = role;
+            pageRef->m_fields->isSupporter = isSupporter;
+
+            cacheUserProfile_ProfilePage(pageRef->m_fields->accountId, role, stars, planets);
+
+            if (pageRef->m_ownProfile) {
+                Mod::get()->setSavedValue("role", pageRef->m_fields->role);
+            }
+
+            updateStatLabel("rl-stars-label", GameToolbox::pointsToString(m_fields->m_stars));
+            updateStatLabel("rl-planets-label", GameToolbox::pointsToString(m_fields->m_planets));
+
+            if (auto rlStatsMenu = getChildByIDRecursive("rl-stats-menu")) {
+                rlStatsMenu->updateLayout();
+            }
+
+            pageRef->loadBadgeFromUserInfo();
+        });
+    }
+
+    void onUserManage(CCObject* sender) {
+        int accountId = m_fields->accountId;
+        auto userControl = RLUserControl::create(accountId);
+        userControl->show();
+    }
+
+    void onPlanetsClicked(CCObject* sender) {
+        int accountId = m_fields->accountId;
+        auto popup = RLDifficultyTotalPopup::create(accountId, RLDifficultyTotalPopup::Mode::Planets);
+        if (popup) popup->show();
+    }
+
+    void onLayoutPointsClicked(CCObject* sender) {
+        // disable button when clicked
+        auto menuItem = typeinfo_cast<CCMenuItemSpriteExtra*>(sender);
+        if (menuItem) menuItem->setEnabled(false);
+
+        int accountId = m_fields->accountId;
+        log::info("Fetching account levels for account ID: {}", accountId);
+
+        auto task = web::WebRequest()
+            .param("accountId", accountId)
+            .get("https://gdrate.arcticwoof.xyz/getAccountLevels");
+
+        Ref<RLProfilePage> pageRef = this;
+
+        task.listen([pageRef, menuItem](web::WebResponse* res) {
+            if (!pageRef) return;
+            if (!res || !res->ok()) {
+                Notification::create("Failed to fetch account levels", NotificationIcon::Error)->show();
+                if (menuItem) menuItem->setEnabled(true);
+                return;
+            }
+
+            auto jsonRes = res->json();
+            if (!jsonRes) {
+                Notification::create("Invalid server response", NotificationIcon::Error)->show();
+                if (menuItem) menuItem->setEnabled(true);
+                return;
+            }
+
+            auto json = jsonRes.unwrap();
+            std::string levelIDs;
+            bool first = true;
+
+            if (json.contains("levels") && json["levels"].isArray()) {
+                log::info("getAccountLevels: using 'levels' array");
+                auto arr = json["levels"].asArray().unwrap();
+                for (auto v : arr) {
+                    auto id = v.as<int>();
+                    if (!id) continue;
+                    if (!first) levelIDs += ",";
+                    levelIDs += numToString(id.unwrap());
+                    first = false;
+                }
+            } else if (json.contains("levelIds") && json["levelIds"].isArray()) {
+                log::info("getAccountLevels: using 'levelIds' array");
+                auto arr = json["levelIds"].asArray().unwrap();
+                for (auto v : arr) {
+                    auto id = v.as<int>();
+                    if (!id) continue;
+                    if (!first) levelIDs += ",";
+                    levelIDs += numToString(id.unwrap());
+                    first = false;
+                }
+            }
+
+            if (!levelIDs.empty()) {
+                if (menuItem) menuItem->setEnabled(true);
+                auto searchObject = GJSearchObject::create(SearchType::Type19, levelIDs);
+                auto browserLayer = LevelBrowserLayer::create(searchObject);
+                auto scene = CCScene::create();
+                scene->addChild(browserLayer);
+                auto transitionFade = CCTransitionFade::create(0.5f, scene);
+                CCDirector::sharedDirector()->pushScene(transitionFade);
+            } else {
+                Notification::create("No levels found for this account", NotificationIcon::Warning)->show();
+                if (menuItem) menuItem->setEnabled(true);
+            }
+        });
+    }
+
+    void onBlueprintStars(CCObject* sender) {
+        int accountId = m_fields->accountId;
+        auto popup = RLDifficultyTotalPopup::create(accountId, RLDifficultyTotalPopup::Mode::Stars);
+        if (popup) popup->show();
+    }
+
+    void onSupporterBadge(CCObject*) {}
+    void onOwnerBadge(CCObject*) {}
+    void onModBadge(CCObject*) {}
+    void onAdminBadge(CCObject*) {}
+
+    void loadBadgeFromUserInfo() {
+        auto userNameMenu = typeinfo_cast<CCMenu*>(m_mainLayer->getChildByIDRecursive("username-menu"));
+        if (!userNameMenu) {
+            log::warn("username-menu not found");
+            return;
+        }
+
+        // supporter badge (show for any profile that is a supporter)
+        if (m_fields->isSupporter) {
+            if (!userNameMenu->getChildByID("rl-supporter-badge")) {
+                auto supporterSprite = CCSprite::create("RL_badgeSupporter.png"_spr);
+                auto supporterButton = CCMenuItemSpriteExtra::create(
+                    supporterSprite,
+                    this,
+                    menu_selector(RLProfilePage::onSupporterBadge)
+                );
+                supporterButton->setID("rl-supporter-badge");
+                userNameMenu->addChild(supporterButton);
+            }
+        }
+
+        if (m_accountID == 7689052) { // ArcticWoof exception
+            if (userNameMenu->getChildByID("rl-owner-badge")) {
+                return;
+            }
+            if (auto mod = userNameMenu->getChildByID("rl-mod-badge")) mod->removeFromParent();
+            if (auto admin = userNameMenu->getChildByID("rl-admin-badge")) admin->removeFromParent();
+
+            auto ownerBadgeSprite = CCSprite::create("RL_badgeOwner.png"_spr);
+            auto ownerBadgeButton = CCMenuItemSpriteExtra::create(
+                ownerBadgeSprite,
+                this,
+                menu_selector(RLProfilePage::onOwnerBadge)
+            );
+            ownerBadgeButton->setID("rl-owner-badge");
+            userNameMenu->addChild(ownerBadgeButton);
+        } else if (m_fields->role == 1) {
+            if (userNameMenu->getChildByID("rl-mod-badge")) {
+                return;
+            }
+            if (auto owner = userNameMenu->getChildByID("rl-owner-badge")) owner->removeFromParent();
+            if (auto admin = userNameMenu->getChildByID("rl-admin-badge")) admin->removeFromParent();
+
+            auto modBadgeSprite = CCSprite::create("RL_badgeMod01.png"_spr);
+            auto modBadgeButton = CCMenuItemSpriteExtra::create(
+                modBadgeSprite,
+                this,
+                menu_selector(RLProfilePage::onModBadge)
+            );
+            modBadgeButton->setID("rl-mod-badge");
+            userNameMenu->addChild(modBadgeButton);
             userNameMenu->updateLayout();
-      }
+        } else if (m_fields->role == 2) {
+            if (userNameMenu->getChildByID("rl-admin-badge")) {
+                log::info("Admin badge already exists, skipping creation");
+                return;
+            }
+            if (auto owner = userNameMenu->getChildByID("rl-owner-badge")) owner->removeFromParent();
+            if (auto mod = userNameMenu->getChildByID("rl-mod-badge")) mod->removeFromParent();
 
-      void onModBadge(CCObject* sender) {
-            FLAlertLayer::create(
-                "Layout Moderator",
-                "This user can <cj>suggest layout levels</c> for <cl>Rated "
-                "Layouts</c> to the <cr>Layout Admins</c>. They have the ability to <co>moderate the leaderboard</c>.",
-                "OK")
-                ->show();
-      }
+            auto adminBadgeSprite = CCSprite::create("RL_badgeAdmin01.png"_spr);
+            auto adminBadgeButton = CCMenuItemSpriteExtra::create(
+                adminBadgeSprite,
+                this,
+                menu_selector(RLProfilePage::onAdminBadge)
+            );
+            adminBadgeButton->setID("rl-admin-badge");
+            userNameMenu->addChild(adminBadgeButton);
+            userNameMenu->updateLayout();
+        } else {
+            // remove role badges if any
+            if (auto owner = userNameMenu->getChildByID("rl-owner-badge")) owner->removeFromParent();
+            if (auto mod = userNameMenu->getChildByID("rl-mod-badge")) mod->removeFromParent();
+            if (auto admin = userNameMenu->getChildByID("rl-admin-badge")) admin->removeFromParent();
+        }
 
-      void onAdminBadge(CCObject* sender) {
-            FLAlertLayer::create(
-                "Layout Administrator",
-                "This user can <cj>rate layout levels</c> for <cl>Rated "
-                "Layouts</c>. They have the same power as <cg>Moderators</c> but including the ability to change the <cy>featured ranking on the "
-                "featured layout levels</c> and <cg>set event layouts</c>.",
-                "OK")
-                ->show();
-      }
-      void onOwnerBadge(CCObject* sender) {
-            FLAlertLayer::create(
-                "Rated Layouts Creator",
-                "<cf>ArcticWoof</c> is the <ca>Creator and Developer</c> of <cl>Rated Layouts</c> Geode Mod.\nHe controls and manages everything within <cl>Rated Layouts</c>, including updates and adding new features as well as the ability to <cg>promote users to Layout Moderators or Administrators</c>.",
-                "OK")
-                ->show();
-      }
-      void onSupporterBadge(CCObject* sender) {
-            geode::createQuickPopup(
-                "Supporter Badge",
-                "This user is a <cp>Layout Supporter</c>! They have supported the development of <cl>Rated Layouts</c> through membership donations.\n\nYou can become a <cp>Layout Supporter</c> by donating via <cp>Ko-Fi</c>",
-                "OK",
-                "Ko-Fi", [this](auto, bool yes) {
-                      if (!yes) return;
-                      utils::web::openLinkInBrowser("https://ko-fi.com/arcticwoof");
-                });
-      }
-      void onBlueprintStars(CCObject* sender) {
-            int accountId = m_fields->accountId;
-            auto popup = RLDifficultyTotalPopup::create(accountId);
-            if (popup) popup->show();
-      }
+        userNameMenu->updateLayout();
+    }
 };
