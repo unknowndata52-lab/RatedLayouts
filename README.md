@@ -20,7 +20,7 @@ This gives the <cy>Layout/Gameplay creators</c> a platform to get their levels r
 - **<cr>Improved Demon Ratings</c>**: More accurate demon ratings by introducing new difficulty value, making demons has more value depending on their actual difficulty.
 - **<cg>Faster Rating Process</c>**: Community-focus rating system which makes it easier to get levels rated quickly.
 - **<co>Layout Moderator/Admin Badges</c>**: Special badges for moderators to identify the layout moderators and admins!
-- **<cy>Leaderboard Integration</c>**: Compete with other players on leaderboards for the most Blueprint Stars and Blueprint Creator Points!
+- **<cy>Leaderboard Integration</c>**: Compete with other players on leaderboards for the most Sparks, Planets and Creator Points!
 - **<ca>Event Rated Layout Levels</c>**: New daily, weekly and monthly rated layout levels to showcase!
 - **<co>Custom Search Filters</c>**: Easily search for rated layout levels using various filters such as difficulty, level type, and more!
 - **<cc>Community Voting System</c>**: Players can vote on suggested layouts based on design, difficulty, and gameplay.
