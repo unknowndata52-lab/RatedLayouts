@@ -568,10 +568,41 @@ class $modify(RLProfilePage, ProfilePage) {
         if (popup) popup->show();
     }
 
-    void onSupporterBadge(CCObject*) {}
-    void onOwnerBadge(CCObject*) {}
-    void onModBadge(CCObject*) {}
-    void onAdminBadge(CCObject*) {}
+    void onModBadge(CCObject* sender) {
+            FLAlertLayer::create(
+                "Layout Moderator",
+                "This user can <cj>suggest layout levels</c> for <cl>Rated "
+                "Layouts</c> to the <cr>Layout Admins</c>. They have the ability to <co>moderate the leaderboard</c>.",
+                "OK")
+                ->show();
+      }
+
+      void onAdminBadge(CCObject* sender) {
+            FLAlertLayer::create(
+                "Layout Administrator",
+                "This user can <cj>rate layout levels</c> for <cl>Rated "
+                "Layouts</c>. They have the same power as <cg>Moderators</c> but including the ability to change the <cy>featured ranking on the "
+                "featured layout levels</c> and <cg>set event layouts</c>.",
+                "OK")
+                ->show();
+      }
+      void onOwnerBadge(CCObject* sender) {
+            FLAlertLayer::create(
+                "Rated Layouts Owner",
+                "<cf>ArcticWoof</c> is the <ca>Owner and Developer</c> of <cl>Rated Layouts</c> Geode Mod.\nHe controls and manages everything within <cl>Rated Layouts</c>, including updates and adding new features as well as the ability to <cg>promote users to Layout Moderators or Administrators</c>.",
+                "OK")
+                ->show();
+      }
+      void onSupporterBadge(CCObject* sender) {
+            geode::createQuickPopup(
+                "Supporter Badge",
+                "This user is a <cp>Layout Supporter</c>! They have supported the development of <cl>Rated Layouts</c> through membership donations.\n\nYou can become a <cp>Layout Supporter</c> by donating via <cp>Ko-Fi</c>",
+                "OK",
+                "Ko-Fi", [this](auto, bool yes) {
+                      if (!yes) return;
+                      utils::web::openLinkInBrowser("https://ko-fi.com/arcticwoof");
+                });
+      }
 
     void loadBadgeFromUserInfo() {
         auto userNameMenu = typeinfo_cast<CCMenu*>(m_mainLayer->getChildByIDRecursive("username-menu"));
