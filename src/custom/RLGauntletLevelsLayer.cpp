@@ -366,8 +366,6 @@ void RLGauntletLevelsLayer::ccTouchesBegan(CCSet* touches, CCEvent* event) {
             m_lastTouchTime = std::chrono::steady_clock::now();
             m_velocity = ccp(0, 0);
             m_flinging = false;
-            // do NOT update m_menuOriginPos here — keep the original origin so parallax doesn't jump on drag start
-            // (we keep m_menuOriginPos only when menu content/position changes intentionally)
       }
 }
 
