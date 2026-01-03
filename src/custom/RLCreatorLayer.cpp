@@ -10,6 +10,7 @@
 #include "RLAnnoucementPopup.hpp"
 #include "RLCreditsPopup.hpp"
 #include "RLDonationPopup.hpp"
+#include "RLGauntletSelectLayer.hpp"
 #include "RLLeaderboardLayer.hpp"
 #include "RLSearchLayer.hpp"
 
@@ -64,7 +65,7 @@ bool RLCreatorLayer::init() {
 
       auto title = CCSprite::create("RL_title.png"_spr);
       title->setPosition({winSize.width / 2, winSize.height / 2 + 130});
-      title->setScale(0.8f);
+      title->setScale(1.4f);
       this->addChild(title);
 
       auto featuredSpr = CCSprite::create("RL_featured01.png"_spr);
@@ -294,8 +295,11 @@ void RLCreatorLayer::onDiscordButton(CCObject* sender) {
 }
 
 void RLCreatorLayer::onLayoutGauntlets(CCObject* sender) {
-      auto annoucement = RLAnnoucementPopup::create();
-      annoucement->show();
+      auto gauntletSelect = RLGauntletSelectLayer::create();
+      auto scene = CCScene::create();
+      scene->addChild(gauntletSelect);
+      auto transitionFade = CCTransitionFade::create(0.5f, scene);
+      CCDirector::sharedDirector()->pushScene(transitionFade);
 }
 
 void RLCreatorLayer::onSupporterButton(CCObject* sender) {
