@@ -171,7 +171,7 @@ void RLGauntletLevelsLayer::createLevelButtons(matjson::Value const& levelsData,
             gauntletSpriteShadow->setColor({0, 0, 0});
             gauntletSpriteShadow->setOpacity(50);
             gauntletSpriteShadow->setAnchorPoint({0.f, .15f});
-            gauntletSprite->addChild(gauntletSpriteShadow);
+            gauntletSprite->addChild(gauntletSpriteShadow, -1);
 
             auto nameLabel = CCLabelBMFont::create(levelName.c_str(), "bigFont.fnt");
             nameLabel->setAlignment(kCCTextAlignmentCenter);

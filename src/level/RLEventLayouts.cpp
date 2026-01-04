@@ -12,7 +12,6 @@
 using namespace geode::prelude;
 
 // helper prototypes
-static std::unordered_set<RLEventLayouts*> g_eventLayoutsInstances;
 static std::string formatTime(long seconds);
 static int getDifficulty(int numerator);
 
@@ -31,8 +30,6 @@ RLEventLayouts* RLEventLayouts::create(EventType type) {
 
 bool RLEventLayouts::setup() {
       // register instance
-      g_eventLayoutsInstances.insert(this);
-
       addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupGold, false);
 
       auto contentSize = m_mainLayer->getContentSize();
@@ -303,9 +300,7 @@ bool RLEventLayouts::setup() {
 
       // Fetch event info from server
       {
-            Ref<RLEventLayouts> selfRef = this;
-            web::WebRequest().get("https://gdrate.arcticwoof.xyz/getEvent").listen([selfRef](web::WebResponse* res) {
-                  if (!selfRef) return;  // popup was destroyed
+            web::WebRequest().get("https://gdrate.arcticwoof.xyz/getEvent").listen([this](web::WebResponse* res) {
                   if (!res || !res->ok()) {
                         Notification::create("Failed to fetch event info", NotificationIcon::Error)->show();
                         return;
@@ -318,10 +313,10 @@ bool RLEventLayouts::setup() {
                   auto json = jsonResult.unwrap();
 
                   std::vector<std::string> keys = {"daily", "weekly", "monthly"};
-                  int idx = static_cast<int>(selfRef->m_eventType);
+                  int idx = static_cast<int>(this->m_eventType);
                   if (idx < 0 || idx >= 3) return;
                   const auto& key = keys[idx];
-                  auto sec = &selfRef->m_sections[idx];
+                  auto sec = &this->m_sections[idx];
                   // if the key is missing or contains no levelId, keep showing the loading spinner and hide play buttons
                   if (!json.contains(key)) {
                         if (sec->playSpinner) sec->playSpinner->setVisible(true);
@@ -341,8 +336,8 @@ bool RLEventLayouts::setup() {
                               sec->playButton->setEnabled(true);
                         }
 
-                        selfRef->m_sections[idx].levelId = levelId;
-                        selfRef->m_sections[idx].secondsLeft = obj["secondsLeft"].as<int>().unwrapOrDefault();
+                        this->m_sections[idx].levelId = levelId;
+                        this->m_sections[idx].secondsLeft = obj["secondsLeft"].as<int>().unwrapOrDefault();
                   } else {
                         if (sec->playSpinner) sec->playSpinner->setVisible(true);
                         if (sec->playButton) sec->playButton->setVisible(false);
@@ -551,10 +546,11 @@ void RLEventLayouts::onInfo(CCObject* sender) {
           "Each layout features a <cb>unique selection</c> of levels handpicked for their <co>gameplay and layout design!</c>\n\n"
           "If you want to play <cg>Past Event Layouts</c>, click the <co>Safe</c> button at the bottom-left of the popup to view previously event layouts.\n\n"
           "### <co>Daily Layouts</c> refresh every 24 hours, <cy>Weekly Layouts</c> every 7 days, and <cp>Monthly Layouts</c> every 30 days.\n\n"
+          "*<cy>All event layouts are set manually so sometimes layouts might be there for long than expected</c>*\n\n"
           "\r\n\r\n---\r\n\r\n"
-          "- <cg>**Daily Layout**</c> showcase <cl>easy layouts</c> *(Easy to Insane Difficulty)* for you to grind and play various layouts\n"
-          "- <cy>**Weekly Layout**</c> offer a bit more <cr>challenging layouts</c> *(Easy to Hard Demons Difficulty)*\n"
-          "- <cp>**Monthly Layout**</c> shows special events/themed layouts like <cl>Verification Bounties</c> and other special activities.\n",
+          "- <cg>**Daily Layout**</c> showcase <cl>Easy Layouts</c> *(Easy to Insane Difficulty)* for you to grind and play various layouts\n"
+          "- <cy>**Weekly Layout**</c> showcase a more <cr>challenging layouts</c> to play *(Easy to Hard Demons Difficulty)*\n"
+          "- <cp>**Monthly Layout**</c> showcase themed/deserving <cp>Layouts</c> that deserves the regonitions it deserves. Often usually showcase <cr>Very hard layouts</c> or <cl>Easy Layouts</c> depending on the monthly layout has to offer.\n",
           "OK")
           ->show();
 }
@@ -767,9 +763,7 @@ void RLEventLayouts::onSafeButton(CCObject* sender) {
       const char* typeStr = (idx >= 0 && idx < 3) ? types[idx] : "daily";
       std::string url = std::string("https://gdrate.arcticwoof.xyz/getEvent?safe=") + typeStr;
 
-      Ref<RLEventLayouts> selfRef = this;
-      web::WebRequest().get(url).listen([selfRef](web::WebResponse* res) {
-            if (!selfRef) return;  // popup destroyed kaboom
+      web::WebRequest().get(url).listen([this](web::WebResponse* res) {
             if (!res || !res->ok()) {
                   Notification::create("Failed to fetch safe list", NotificationIcon::Error)->show();
                   return;

@@ -135,14 +135,6 @@ bool RLCreatorLayer::init() {
 
       mainMenu->updateLayout();
 
-      if (Mod::get()->getSettingValue<bool>("disableBackground") == false) {
-            auto mainMenuBg = CCScale9Sprite::create("square02_001.png");
-            mainMenuBg->setContentSize(mainMenu->getContentSize());
-            mainMenuBg->setAnchorPoint({0, 0});
-            mainMenuBg->setOpacity(50);
-            mainMenu->addChild(mainMenuBg, -1);
-      }
-
       // info button at the bottom left
       auto infoMenu = CCMenu::create();
       infoMenu->setPosition({0, 0});

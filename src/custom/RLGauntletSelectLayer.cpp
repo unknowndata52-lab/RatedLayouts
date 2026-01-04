@@ -2,6 +2,7 @@
 
 #include <Geode/Geode.hpp>
 
+#include "RLAnnoucementPopup.hpp"
 #include "RLGauntletLevelsLayer.hpp"
 
 using namespace geode::prelude;
@@ -26,6 +27,12 @@ bool RLGauntletSelectLayer::init() {
 
       auto winSize = CCDirector::sharedDirector()->getWinSize();
 
+      // title
+      auto titleSprite = CCSprite::create("RL_titleGauntlet.png"_spr);
+      titleSprite->setPosition({winSize.width / 2, winSize.height - 30});
+      titleSprite->setScale(.7f);
+      this->addChild(titleSprite, 10);
+
       // crap
       addSideArt(this, SideArt::All, SideArtStyle::LayerGray, false);
 
@@ -46,8 +53,20 @@ bool RLGauntletSelectLayer::init() {
       m_loadingCircle->setPosition(winSize / 2);
       this->addChild(m_loadingCircle);
 
+      // popup annouce
+      auto infoSpr = CCSprite::createWithSpriteFrameName("GJ_infoIcon_001.png");
+      auto infoBtn = CCMenuItemSpriteExtra::create(
+          infoSpr, this, menu_selector(RLGauntletSelectLayer::onInfoButton));
+      infoBtn->setPosition({25, 25});
+      backMenu->addChild(infoBtn);
+
       fetchGauntlets();
       return true;
+}
+
+void RLGauntletSelectLayer::onInfoButton(CCObject* sender) {
+      auto announcement = RLAnnoucementPopup::create();
+      announcement->show();
 }
 
 void RLGauntletSelectLayer::onBackButton(CCObject* sender) {
@@ -73,11 +92,11 @@ void RLGauntletSelectLayer::onGauntletButtonClick(CCObject* sender) {
 
 void RLGauntletSelectLayer::fetchGauntlets() {
       web::WebRequest request;
-      request.get("https://gdrate.arcticwoof.xyz/getGauntlets").listen([this](web::WebResponse* response) {
+      m_gauntletsListener = [this](web::WebResponse* response) {
             if (response->ok()) {
                   auto jsonRes = response->json();
                   if (jsonRes.isOk()) {
-                        onGauntletsFetched(jsonRes.unwrap());
+                        this->onGauntletsFetched(jsonRes.unwrap());
                   } else {
                         log::error("Failed to parse JSON: {}", jsonRes.unwrapErr());
                         Notification::create("Failed to parse gauntlets data", NotificationIcon::Error)->show();
@@ -86,7 +105,8 @@ void RLGauntletSelectLayer::fetchGauntlets() {
                   log::error("Failed to fetch gauntlets: {}", response->string().unwrapOr("Unknown error"));
                   Notification::create("Failed to fetch gauntlets", NotificationIcon::Error)->show();
             }
-      });
+      };
+      request.get("https://gdrate.arcticwoof.xyz/getGauntlets").listen(m_gauntletsListener);
 }
 
 void RLGauntletSelectLayer::onGauntletsFetched(matjson::Value const& json) {
@@ -124,7 +144,7 @@ void RLGauntletSelectLayer::createGauntletButtons(matjson::Value const& gauntlet
       float totalButtonsWidth = (std::min((size_t)maxButtonsPerRow, gauntletsArray.size())) * (buttonWidth + spacingX);
       float startX = (winSize.width - totalButtonsWidth) / 2 + buttonWidth / 2 + spacingX / 2;
 
-      float centerY = winSize.height / 2;
+      float centerY = winSize.height / 2 - 20;
 
       for (size_t i = 0; i < gauntletsArray.size(); i++) {
             auto gauntlet = gauntletsArray[i];
@@ -156,6 +176,31 @@ void RLGauntletSelectLayer::createGauntletButtons(matjson::Value const& gauntlet
 
             gauntletBg->addChild(nameLabel, 3);
             gauntletBg->addChild(nameLabelShadow, 2);
+
+            // difficulty range label (min-max) with star icon to the right
+            int minDiff = gauntlet["min_difficulty"].asInt().unwrapOr(0);
+            int maxDiff = gauntlet["max_difficulty"].asInt().unwrapOr(0);
+            if (minDiff > 0 || maxDiff > 0) {
+                  std::string diffText = fmt::format("{}-{}", minDiff, maxDiff);
+
+                  auto diffLabel = CCLabelBMFont::create(diffText.c_str(), "bigFont.fnt");
+                  if (diffLabel) {
+                        diffLabel->setAlignment(kCCTextAlignmentCenter);
+                        diffLabel->setAnchorPoint({0.5f, 0.5f});
+                        diffLabel->setScale(0.45f);
+                        diffLabel->setPosition({gauntletBg->getContentSize().width / 2 + 10, 50});
+                        diffLabel->setAnchorPoint({1.f, 0.5f});
+                        gauntletBg->addChild(diffLabel, 3);
+
+                        // star icon to the right of the difficulty label
+                        auto diffStar = CCSprite::create("RL_starSmall.png"_spr);
+                        if (diffStar) {
+                              diffStar->setAnchorPoint({0.f, 0.5f});
+                              diffStar->setPosition({gauntletBg->getContentSize().width / 2 + 15, diffLabel->getPositionY()});
+                              gauntletBg->addChild(diffStar, 2);
+                        }
+                  }
+            }
 
             std::string spriteName = fmt::format("RL_gauntlet-{}.png"_spr, gauntletId);
             auto gauntletSprite = CCSprite::create(spriteName.c_str());
