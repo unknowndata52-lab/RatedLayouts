@@ -375,7 +375,7 @@ void RLGauntletLevelsLayer::onGauntletClick(CCObject* sender) {
       if (stored && stored->count() > 0) {
             auto level = static_cast<GJGameLevel*>(stored->objectAtIndex(0));
             if (level && level->m_levelID == levelId) {
-                  auto scene = LevelInfoLayer::scene(level, true);
+                  auto scene = LevelInfoLayer::scene(level, false);
                   auto transitionFade = CCTransitionFade::create(0.5f, scene);
                   CCDirector::sharedDirector()->pushScene(transitionFade);
                   return;
@@ -531,7 +531,7 @@ void RLGauntletLevelsLayer::update(float dt) {
                   auto level = static_cast<GJGameLevel*>(stored->objectAtIndex(0));
                   if (level && level->m_levelID == m_pendingLevelId) {
                         // open level info
-                        auto scene = LevelInfoLayer::scene(level, true);
+                        auto scene = LevelInfoLayer::scene(level, false);
                         auto transitionFade = CCTransitionFade::create(0.5f, scene);
                         CCDirector::sharedDirector()->pushScene(transitionFade);
                         // cleanup pending state
