@@ -300,6 +300,10 @@ class $modify(RLCommentCell, CommentCell) {
       }
 
       void loadBadgeForComment(int accountId) {
+            if (!m_mainLayer) {
+                  log::warn("main layer is null, cannot load badge for comment");
+                  return;
+            }
             auto userNameMenu = typeinfo_cast<CCMenu*>(
                 m_mainLayer->getChildByIDRecursive("username-menu"));
             if (!userNameMenu) {
@@ -372,8 +376,8 @@ class $modify(RLCommentCell, CommentCell) {
       }
       void onOwnerBadge(CCObject* sender) {
             FLAlertLayer::create(
-                "Rated Layouts Creator",
-                "<cf>ArcticWoof</c> is the <ca>Creator and Developer</c> of <cl>Rated Layouts</c> Geode Mod.\nHe controls and manages everything within <cl>Rated Layouts</c>, including updates and adding new features as well as the ability to <cg>promote users to Layout Moderators or Administrators</c>.",
+                "Rated Layouts Owner",
+                "<cf>ArcticWoof</c> is the <ca>Owner and Developer</c> of <cl>Rated Layouts</c> Geode Mod.\nHe controls and manages everything within <cl>Rated Layouts</c>, including updates and adding new features as well as the ability to <cg>promote users to Layout Moderators or Administrators</c>.",
                 "OK")
                 ->show();
       }

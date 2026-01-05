@@ -233,7 +233,6 @@ class $modify(RLProfilePage, ProfilePage) {
 
       geode::Task<void> fetchProfileDataTask(int accountId) {
             log::info("Fetching profile data for account ID: {}", accountId);
-            m_fields->accountId = accountId;
 
             std::string token;
             auto res = argon::startAuth(
@@ -262,6 +261,15 @@ class $modify(RLProfilePage, ProfilePage) {
             req.bodyJSON(jsonBody);
 
             auto response = co_await req.post("https://gdrate.arcticwoof.xyz/profile");
+            Ref<RLProfilePage> pageRef = this;
+            if (!pageRef) {
+                  log::warn("ProfilePage destroyed before receiving response, aborting update");
+                  co_return;
+            }
+
+            // assign accountId into fields only after have a valid Ref
+            pageRef->m_fields->accountId = accountId;
+
             if (!response.ok()) {
                   log::warn("Server returned non-ok status");
                   co_return;
@@ -280,34 +288,34 @@ class $modify(RLProfilePage, ProfilePage) {
             int planets = json["planets"].asInt().unwrapOrDefault();
             bool isSupporter = json["isSupporter"].asBool().unwrapOrDefault();
 
-            m_fields->m_stars = stars;
-            m_fields->m_planets = planets;
-            m_fields->m_points = points;
+            pageRef->m_fields->m_stars = stars;
+            pageRef->m_fields->m_planets = planets;
+            pageRef->m_fields->m_points = points;
 
-            m_fields->role = role;
-            m_fields->isSupporter = isSupporter;
+            pageRef->m_fields->role = role;
+            pageRef->m_fields->isSupporter = isSupporter;
 
             log::info("Profile data - points: {}, stars: {}, planets: {}, supporter: {}", points, stars, planets, isSupporter);
 
-            if (!m_mainLayer) {
+            if (!pageRef->m_mainLayer) {
                   log::warn("ProfilePage destroyed before updating UI, skipping UI updates");
                   co_return;
             }
 
-            cacheUserProfile_ProfilePage(m_fields->accountId, role, stars, planets);
+            cacheUserProfile_ProfilePage(pageRef->m_fields->accountId, role, stars, planets);
 
-            if (m_ownProfile) {
-                  Mod::get()->setSavedValue("role", m_fields->role);
+            if (pageRef->m_ownProfile) {
+                  Mod::get()->setSavedValue("role", pageRef->m_fields->role);
             }
 
-            updateStatLabel("rl-stars-label", GameToolbox::pointsToString(m_fields->m_stars));
-            updateStatLabel("rl-planets-label", GameToolbox::pointsToString(m_fields->m_planets));
+            pageRef->updateStatLabel("rl-stars-label", GameToolbox::pointsToString(pageRef->m_fields->m_stars));
+            pageRef->updateStatLabel("rl-planets-label", GameToolbox::pointsToString(pageRef->m_fields->m_planets));
 
-            auto pointsText = GameToolbox::pointsToString(m_fields->m_points);
-            auto rlStatsMenu = getChildByIDRecursive("rl-stats-menu");
+            auto pointsText = GameToolbox::pointsToString(pageRef->m_fields->m_points);
+            auto rlStatsMenu = pageRef->getChildByIDRecursive("rl-stats-menu");
 
             if (!Mod::get()->getSettingValue<bool>("disableCreatorPoints")) {
-                  auto pointsEntry = createStatEntry(
+                  auto pointsEntry = pageRef->createStatEntry(
                       "rl-points-entry",
                       "rl-points-label",
                       pointsText,
@@ -315,7 +323,7 @@ class $modify(RLProfilePage, ProfilePage) {
                       menu_selector(RLProfilePage::onLayoutPointsClicked));
 
                   if (points > 0) {
-                        rlStatsMenu->addChild(pointsEntry);
+                        if (rlStatsMenu) rlStatsMenu->addChild(pointsEntry);
                   }
             }
 
@@ -346,7 +354,7 @@ class $modify(RLProfilePage, ProfilePage) {
                         iconBtn->setPosition({pad + ls.width + gap, h / 2.f});
                   }
 
-                  auto betterProgSign = getChildByIDRecursive("itzkiba.better_progression/tier-bar");
+                  auto betterProgSign = pageRef->getChildByIDRecursive("itzkiba.better_progression/tier-bar");
                   if (betterProgSign) {
                         rlStatsMenu->setScale(0.845f);
                         rlStatsMenu->setPosition({309.f, 248.f});
@@ -358,7 +366,7 @@ class $modify(RLProfilePage, ProfilePage) {
             // add a user manage button if the user accessing it is a mod or an admin
             if (Mod::get()->getSavedValue<int>("role", 0) >= 1) {
                   auto leftMenu = static_cast<CCMenu*>(
-                      m_mainLayer->getChildByIDRecursive("left-menu"));
+                      pageRef->m_mainLayer->getChildByIDRecursive("left-menu"));
                   if (leftMenu && !leftMenu->getChildByID("rl-user-manage")) {
                         auto userBtn = EditorButtonSprite::createWithSprite(
                             "RL_badgeAdmin01.png"_spr,
@@ -366,7 +374,7 @@ class $modify(RLProfilePage, ProfilePage) {
                             EditorBaseColor::Gray,
                             EditorBaseSize::Normal);
                         auto userButton = CCMenuItemSpriteExtra::create(
-                            userBtn, this, menu_selector(RLProfilePage::onUserManage));
+                            userBtn, pageRef, menu_selector(RLProfilePage::onUserManage));
                         userButton->setID("rl-user-manage");
                         leftMenu->addChild(userButton);
                         leftMenu->updateLayout();
@@ -374,13 +382,11 @@ class $modify(RLProfilePage, ProfilePage) {
             }
 
             // only set saved data if you own the profile
-            if (m_ownProfile) {
-                  Mod::get()->setSavedValue("role", m_fields->role);
+            if (pageRef->m_ownProfile) {
+                  Mod::get()->setSavedValue("role", pageRef->m_fields->role);
             }
 
-            loadBadgeFromUserInfo();
-
-            co_return;
+            pageRef->loadBadgeFromUserInfo();
       }
 
       void fetchProfileData(int accountId) {
@@ -416,11 +422,17 @@ class $modify(RLProfilePage, ProfilePage) {
 
             auto postTask = postReq.post("https://gdrate.arcticwoof.xyz/profile");
 
-            postTask.listen([this](web::WebResponse* response) {
+            Ref<RLProfilePage> pageRef = this;
+            postTask.listen([pageRef](web::WebResponse* response) {
+                  if (!pageRef) {
+                        log::warn("skipping profile data update");
+                        return;
+                  }
                   log::info("Received response from server");
 
-                  if (!m_mainLayer) {
-                        log::warn("ProfilePage has been destroyed, skipping profile data update");
+                  auto page = pageRef;
+                  if (!page->m_mainLayer) {
+                        log::warn("skipping profile data update");
                         return;
                   }
 
@@ -442,27 +454,27 @@ class $modify(RLProfilePage, ProfilePage) {
                   int planets = json["planets"].asInt().unwrapOrDefault();
                   bool isSupporter = json["isSupporter"].asBool().unwrapOrDefault();
 
-                  m_fields->m_stars = stars;
-                  m_fields->m_planets = planets;
-                  m_fields->m_points = points;
+                  page->m_fields->m_stars = stars;
+                  page->m_fields->m_planets = planets;
+                  page->m_fields->m_points = points;
 
-                  m_fields->role = role;
-                  m_fields->isSupporter = isSupporter;
+                  page->m_fields->role = role;
+                  page->m_fields->isSupporter = isSupporter;
 
-                  cacheUserProfile_ProfilePage(m_fields->accountId, role, stars, planets);
+                  cacheUserProfile_ProfilePage(page->m_fields->accountId, role, stars, planets);
 
-                  if (m_ownProfile) {
-                        Mod::get()->setSavedValue("role", m_fields->role);
+                  if (page->m_ownProfile) {
+                        Mod::get()->setSavedValue("role", page->m_fields->role);
                   }
 
-                  updateStatLabel("rl-stars-label", GameToolbox::pointsToString(m_fields->m_stars));
-                  updateStatLabel("rl-planets-label", GameToolbox::pointsToString(m_fields->m_planets));
+                  page->updateStatLabel("rl-stars-label", GameToolbox::pointsToString(page->m_fields->m_stars));
+                  page->updateStatLabel("rl-planets-label", GameToolbox::pointsToString(page->m_fields->m_planets));
 
-                  if (auto rlStatsMenu = getChildByIDRecursive("rl-stats-menu")) {
+                  if (auto rlStatsMenu = page->getChildByIDRecursive("rl-stats-menu")) {
                         rlStatsMenu->updateLayout();
                   }
 
-                  loadBadgeFromUserInfo();
+                  page->loadBadgeFromUserInfo();
             });
       }
 
@@ -591,6 +603,10 @@ class $modify(RLProfilePage, ProfilePage) {
       }
 
       void loadBadgeFromUserInfo() {
+            if (!m_mainLayer) {
+                  log::warn("main layer is null, cannot load badges from user info");
+                  return;
+            }
             auto userNameMenu = typeinfo_cast<CCMenu*>(m_mainLayer->getChildByIDRecursive("username-menu"));
             if (!userNameMenu) {
                   log::warn("username-menu not found");
