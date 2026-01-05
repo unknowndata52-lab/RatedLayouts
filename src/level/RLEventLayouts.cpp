@@ -550,7 +550,7 @@ void RLEventLayouts::onInfo(CCObject* sender) {
           "\r\n\r\n---\r\n\r\n"
           "- <cg>**Daily Layout**</c> showcase <cl>Easy Layouts</c> *(Easy to Insane Difficulty)* for you to grind and play various layouts\n"
           "- <cy>**Weekly Layout**</c> showcase a more <cr>challenging layouts</c> to play *(Easy to Hard Demons Difficulty)*\n"
-          "- <cp>**Monthly Layout**</c> showcase themed/deserving <cp>Layouts</c> that deserves the regonitions it deserves. Often usually showcase <cr>Very hard layouts</c> or <cl>Easy Layouts</c> depending on the monthly layout has to offer.\n",
+          "- <cp>**Monthly Layout**</c> showcase themed <cp>Layouts</c> that relates to the current month or showcase well-made/hyped layouts. Often usually showcase <cr>Very hard layouts</c> or <cl>Easy Layouts</c> depending on the monthly layout has to offer.\n",
           "OK")
           ->show();
 }

@@ -11,7 +11,7 @@
 - Fixed issue where the Leaderboard tabs is transparent when selected.
 - Event Layouts are now more responsive when pressing the play button
 - Comment Glow will now apply when an user has planets in their stats.
-- Minor fixes relating to Popup informations
+- Minor fixes relating to Popup information
 
 Thanks to [delivel-tech](https://github.com/delivel-tech) for this update!
 

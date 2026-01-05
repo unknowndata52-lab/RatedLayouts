@@ -175,7 +175,7 @@ void RLLeaderboardLayer::onInfoButton(CCObject* sender) {
           "The leaderboard shows the top players in <cb>Rated Layouts</c> based "
           "on <cl>Sparks</c>, <co>Planets</c> or <cf>Creator Points</c>. You can view each category by selecting the tabs.\n\n"
           "- <cl>Sparks</c> are earned by completing a <cb>Classic Rated Layouts</c> level and are only counted when beaten legitimately.\n\n"
-          "- <co>Planets</c> are earned by completing a <cb>Platformer Rated Layouts</c> level only counted when beaten legitimately.\n\n"
+          "- <co>Planets</c> are earned by completing a <cb>Platformer Rated Layouts</c> level and are only counted when beaten legitimately.\n\n"
           "- <cf>Blueprint Creator Points</c> are earned based on the how many rated layouts levels you have in your account. Getting a rated layout level earns you 1 point, <cy>Featured Rated Layouts</c> level earns you 2 points and <cp>Epic Rated Layout</c> levels earn you 3 points. *This is unaffected from those who are exclusion.*\n\n"
           "### Any <cr>unfair</c> means of obtaining these stars <cy>(eg. instant complete, noclipping, secret way)</c> will result in an <cr>exclusion from the leaderboard and there will be NO APPEALS!</c> Each completion are <co>publicly logged</c> for this purpose.\n\n",
           "OK")

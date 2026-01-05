@@ -3,8 +3,8 @@
 #include <Geode/utils/coro.hpp>
 #include <argon/argon.hpp>
 
-#include "RLDifficultyTotalPopup.hpp"
-#include "RLUserControl.hpp"
+#include "../player/RLDifficultyTotalPopup.hpp"
+#include "../player/RLUserControl.hpp"
 
 using namespace geode::prelude;
 
@@ -147,19 +147,10 @@ class $modify(RLProfilePage, ProfilePage) {
                   return;
             }
 
-            auto rlStatsSpr = CCSprite::create("GJ_button_04.png");
-            auto rlStatsSprOn = CCSprite::create("GJ_button_02.png");
-
-            auto rlSprA = CCSprite::create("RL_planetMed.png"_spr);
-            auto rlSprB = CCSprite::create("RL_planetMed.png"_spr);
-            rlSprA->setPosition({20.f, 20.f});
-            rlSprB->setPosition({20.f, 20.f});
-
-            rlStatsSpr->addChild(rlSprA);
-            rlStatsSprOn->addChild(rlSprB);
-
-            rlStatsSpr->setScale(0.8f);
-            rlStatsSprOn->setScale(0.8f);
+            auto planetSpr = CCSprite::create("RL_planetMed.png"_spr);
+            planetSpr->setScale(0.8f);
+            auto rlStatsSpr = EditorButtonSprite::create(planetSpr, EditorBaseColor::Gray, EditorBaseSize::Normal);
+            auto rlStatsSprOn = EditorButtonSprite::create(planetSpr, EditorBaseColor::Cyan, EditorBaseSize::Normal);
 
             auto rlStatsBtn = CCMenuItemToggler::create(
                 rlStatsSpr,
