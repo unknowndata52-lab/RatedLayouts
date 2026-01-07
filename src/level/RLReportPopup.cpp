@@ -225,13 +225,13 @@ void RLReportPopup::onInfo(CCObject* sender) {
           "If your reason is not listed, you can use the <cy>'Reasons'</c> input field to provide additional context.\n\n"
           "Once you submit the report, <cl>Layout Moderators</c> or <cr>Layout Admins</c> will review it and take <cg>appropriate action</c> based on our Rated Layouts guidelines.\n\n"
           "List of report reasons:\n"
-          "- <cy>**Plagiarism:**</c> Layout is either stolen or directly copied from a decorated/officially rated level *(eg. removing the entire decoration of an existing level and claiming it as your own)*\n"
+          "- <cy>**Plagiarism:**</c> Layout is either stolen levels/layouts or directly copied from a decorated/officially rated level *(eg. removing the entire decoration of an existing level and claiming it as your own)*\n"
           "- <cg>**Secret Way:**</c> Layout contains secret way/swag routes that allows players to beat the entire level without actually playing it.\n"
           "- <co>**Low Effort:**</c> Layout contains minimal effort or creativity in terms of gameplay.\n"
           "- <cl>**Unverified:**</c> Layout hasn't been beaten legit or hasn't been actually verified.\n"
           "- <cr>**NSFW Content:**</c> Layout contains inappropriate or explicit content. *(Mainly subjective or sexual themed)*\n"
           "- <cp>**Misrate:**</c> Level was rated incorrectly like ratings or difficulty is set wrong.\n"
-          "- <cf>**Decorated:**</c> Layout has been heavily/partically decorated or to the point that the level itself is not a layout or possibly can be officialy rated.",
+          "- <cf>**Decorated:**</c> Layout has been heavily/partically decorated or to the point that the level itself is not a layout or possibly can be officially rated.",
           "OK")
           ->show();
 }
