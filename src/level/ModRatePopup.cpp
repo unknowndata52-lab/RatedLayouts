@@ -590,6 +590,23 @@ void ModRatePopup::onSuggestButton(CCObject* sender) {
       jsonBody["isPlat"] = (m_level && m_level->isPlatformer());
       jsonBody["suggest"] = true;
 
+      int featured = 0;
+      if (m_isFeatured) {
+            featured = 1;
+      } else if (m_isEpicFeatured) {
+            featured = 2;
+      }
+      jsonBody["featured"] = featured;
+
+      // include featuredScore when applicable
+      if ((m_isFeatured || m_isEpicFeatured) && m_featuredScoreInput) {
+            auto scoreStr = m_featuredScoreInput->getString();
+            if (!scoreStr.empty()) {
+                  int score = numFromString<int>(scoreStr).unwrapOr(0);
+                  jsonBody["featuredScore"] = score;
+            }
+      }
+
       if (m_isRejected) {
             jsonBody["isRejected"] = true;
       } else {
