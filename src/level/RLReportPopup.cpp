@@ -14,6 +14,7 @@ RLReportPopup* RLReportPopup::create(int levelId) {
 
 bool RLReportPopup::setup() {
       setTitle("Rated Layouts Report Level");
+      addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupBlue, false);
 
       // report
       auto reportButtonSpr = ButtonSprite::create(
@@ -75,8 +76,9 @@ bool RLReportPopup::setup() {
       m_toggleMenu = toggleMenu;
 
       // reasons
-      m_reasonInput = TextInput::create(m_mainLayer->getScaledContentSize().width - 80.f, "Reasons/Additional Information");
+      m_reasonInput = TextInput::create(m_mainLayer->getScaledContentSize().width - 80.f, "Reasons/Additional Information", "chatFont.fnt");
       m_reasonInput->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, 70.f});
+      m_reasonInput->setCommonFilter(CommonFilter::Any);
       m_reasonInput->setID("report-reason-input");
       m_mainLayer->addChild(m_reasonInput);
 
@@ -199,6 +201,7 @@ void RLReportPopup::onSubmit(CCObject* sender) {
                       bool success = json["success"].asBool().unwrapOrDefault();
                       if (success) {
                             uploadPopup->showSuccessMessage("Report submitted!");
+                            self->removeFromParent();
                             // disable inputs
                             if (self->m_reasonInput) {
                                   self->m_reasonInput->setString("");

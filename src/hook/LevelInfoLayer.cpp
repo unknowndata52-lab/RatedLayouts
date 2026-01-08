@@ -658,7 +658,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                         // ensure epic is removed
                         if (epicFeaturedCoin) epicFeaturedCoin->removeFromParent();
                         if (!featuredCoin) {
-                              auto newFeaturedCoin = CCSprite::create("rlfeaturedCoin.png"_spr);
+                              auto newFeaturedCoin = CCSprite::create("RL_featuredCoin.png"_spr);
                               newFeaturedCoin->setPosition({difficultySprite2->getContentSize().width / 2,
                                                             difficultySprite2->getContentSize().height / 2});
                               newFeaturedCoin->setID("featured-coin");
@@ -668,7 +668,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                         // ensure standard is removed
                         if (featuredCoin) featuredCoin->removeFromParent();
                         if (!epicFeaturedCoin) {
-                              auto newEpicCoin = CCSprite::create("rlepicFeaturedCoin.png"_spr);
+                              auto newEpicCoin = CCSprite::create("RL_epicFeaturedCoin.png"_spr);
                               newEpicCoin->setPosition({difficultySprite2->getContentSize().width / 2,
                                                         difficultySprite2->getContentSize().height / 2});
                               newEpicCoin->setID("epic-featured-coin");

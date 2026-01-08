@@ -2,7 +2,7 @@
 
 A <cl>community-run & standalone</c> <cg>rating system</c> that focus solely on <cl>Layout Levels</c>!
 
-This mod adds a <cg>new rating system</c> that focuses on the <cl>layout design</c> and <cc>gameplay</c> rather than decoration and effects. 
+This mod adds a <cg>new rating system</c> that focuses on the <cl>layout design</c> and <cc>gameplay</c> rather than decoration and effects.
 
 This gives the <cy>Layout/Gameplay creators</c> a platform to get their levels rated and recognized.
 
@@ -25,6 +25,7 @@ This gives the <cy>Layout/Gameplay creators</c> a platform to get their levels r
 - **<co>Custom Search Filters</c>**: Easily search for rated layout levels using various filters such as difficulty, level type, and more!
 - **<cc>Community Voting System</c>**: Players can vote on suggested layouts based on originality, difficulty, and gameplay.
 - **<cj>Layout Gauntlets</c>**: Special gauntlets featuring themed classic rated layout levels created by Layout/Gameplay creators through Creator Contest.
+- **<cr>Report Rated Layouts</c>**: Report rated layouts that violates the Rated Layouts guidelines. Help us maintain the quality of rated layouts!
 - **<cs>QOL Features!</c>**: Various quality of life improvements for both players and creators.
 
 ## Up-coming Features

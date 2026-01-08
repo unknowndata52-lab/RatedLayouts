@@ -44,9 +44,11 @@ bool RLBadgeRequestPopup::setup() {
 
 void RLBadgeRequestPopup::onSubmit(CCObject* sender) {
       if (!m_discordInput) return;
+      auto upopup = UploadActionPopup::create(nullptr, "Submitting Badge Request...");
+      upopup->show();
       auto discord = m_discordInput->getString();
       if (discord.empty()) {
-            Notification::create("Please enter your Discord username", NotificationIcon::Error)->show();
+            upopup->showFailMessage("Please enter your Discord username");
             return;
       }
 
@@ -58,17 +60,17 @@ void RLBadgeRequestPopup::onSubmit(CCObject* sender) {
       auto req = web::WebRequest();
       req.bodyJSON(body);
       Ref<RLBadgeRequestPopup> self = this;
-      req.post("https://gdrate.arcticwoof.xyz/getSupporter").listen([self](web::WebResponse* res) {
+      req.post("https://gdrate.arcticwoof.xyz/getSupporter").listen([self, upopup](web::WebResponse* res) {
             if (!self) return;
             if (!res) {
-                  Notification::create("Discord Username doesn't exists.", NotificationIcon::Error)->show();
+                  upopup->showFailMessage("Discord Username doesn't exists.");
                   return;
             }
 
             auto str = res->string().unwrapOrDefault();
             if (!str.empty()) {
                   if (!res->ok()) {
-                        Notification::create(str, NotificationIcon::Error)->show();
+                        upopup->showFailMessage(str);
                         return;
                   }
                   Notification::create(str, NotificationIcon::Success)->show();
@@ -78,11 +80,11 @@ void RLBadgeRequestPopup::onSubmit(CCObject* sender) {
 
             if (!res->ok()) {
                   // show status code
-                  Notification::create(fmt::format("Failed to submit request (code {})", res->code()), NotificationIcon::Error)->show();
+                  upopup->showFailMessage(fmt::format("Failed to submit request (code {})", res->code()));
                   return;
             }
 
-            Notification::create("Supporter Badge acquired!", NotificationIcon::Success)->show();
+            upopup->showSuccessMessage("Supporter Badge acquired!");
             self->removeFromParent();
       });
 }

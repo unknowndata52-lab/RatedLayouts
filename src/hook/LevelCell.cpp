@@ -253,7 +253,7 @@ class $modify(LevelCell) {
                         if (featured == 1) {
                               if (epicFeaturedCoin) epicFeaturedCoin->removeFromParent();
                               if (!featuredCoin) {
-                                    auto newFeaturedCoin = CCSprite::create("rlfeaturedCoin.png"_spr);
+                                    auto newFeaturedCoin = CCSprite::create("RL_featuredCoin.png"_spr);
                                     if (newFeaturedCoin) {
                                           newFeaturedCoin->setPosition({difficultySprite->getContentSize().width / 2,
                                                                         difficultySprite->getContentSize().height / 2});
@@ -264,7 +264,7 @@ class $modify(LevelCell) {
                         } else if (featured == 2) {
                               if (featuredCoin) featuredCoin->removeFromParent();
                               if (!epicFeaturedCoin) {
-                                    auto newEpicCoin = CCSprite::create("rlepicFeaturedCoin.png"_spr);
+                                    auto newEpicCoin = CCSprite::create("RL_epicFeaturedCoin.png"_spr);
                                     if (newEpicCoin) {
                                           newEpicCoin->setPosition({difficultySprite->getContentSize().width / 2,
                                                                     difficultySprite->getContentSize().height / 2});

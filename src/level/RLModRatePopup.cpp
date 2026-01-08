@@ -185,8 +185,8 @@ bool RLModRatePopup::setup(std::string title, GJGameLevel* level) {
       }
 
       // toggle between featured or stars only
-      auto offSprite = CCSpriteGrayscale::create("rlfeaturedCoin.png"_spr);
-      auto onSprite = CCSprite::create("rlfeaturedCoin.png"_spr);
+      auto offSprite = CCSpriteGrayscale::create("RL_featuredCoin.png"_spr);
+      auto onSprite = CCSprite::create("RL_featuredCoin.png"_spr);
       auto toggleFeatured = CCMenuItemToggler::create(
           offSprite, onSprite, this, menu_selector(RLModRatePopup::onToggleFeatured));
       m_featuredToggleItem = toggleFeatured;
@@ -197,8 +197,8 @@ bool RLModRatePopup::setup(std::string title, GJGameLevel* level) {
       m_mainLayer->addChild(menuButtons);
 
       if (userRole >= 1) {
-            auto offEpicSprite = CCSpriteGrayscale::create("rlepicFeaturedCoin.png"_spr);
-            auto onEpicSprite = CCSprite::create("rlepicFeaturedCoin.png"_spr);
+            auto offEpicSprite = CCSpriteGrayscale::create("RL_epicFeaturedCoin.png"_spr);
+            auto onEpicSprite = CCSprite::create("RL_epicFeaturedCoin.png"_spr);
             auto toggleEpicFeatured = CCMenuItemToggler::create(
                 offEpicSprite, onEpicSprite, this, menu_selector(RLModRatePopup::onToggleEpicFeatured));
             m_epicFeaturedToggleItem = toggleEpicFeatured;
@@ -706,7 +706,7 @@ void RLModRatePopup::onToggleFeatured(CCObject* sender) {
       }
 
       if (m_isFeatured) {
-            auto featuredCoin = CCSprite::create("rlfeaturedCoin.png"_spr);
+            auto featuredCoin = CCSprite::create("RL_featuredCoin.png"_spr);
             featuredCoin->setPosition({0, 0});
             featuredCoin->setScale(1.2f);
             featuredCoin->setID("featured-coin");
@@ -716,7 +716,7 @@ void RLModRatePopup::onToggleFeatured(CCObject* sender) {
             m_isEpicFeatured = false;
             if (m_epicFeaturedToggleItem) {
                   m_epicFeaturedToggleItem->toggle(false);
-                  setTogglerGrayscale(m_epicFeaturedToggleItem, "rlepicFeaturedCoin.png"_spr, false);
+                  setTogglerGrayscale(m_epicFeaturedToggleItem, "RL_epicFeaturedCoin.png"_spr, false);
             }
             // score only for admin
             if (userRole == 2) {
@@ -737,7 +737,7 @@ void RLModRatePopup::onToggleFeatured(CCObject* sender) {
                   }
             }
             if (m_epicFeaturedToggleItem) {
-                  setTogglerGrayscale(m_epicFeaturedToggleItem, "rlepicFeaturedCoin.png"_spr, false);
+                  setTogglerGrayscale(m_epicFeaturedToggleItem, "RL_epicFeaturedCoin.png"_spr, false);
             }
       }
 }
@@ -781,9 +781,9 @@ void RLModRatePopup::onToggleEpicFeatured(CCObject* sender) {
             m_isFeatured = false;
             if (m_featuredToggleItem) {
                   m_featuredToggleItem->toggle(false);
-                  setTogglerGrayscale(m_featuredToggleItem, "rlfeaturedCoin.png"_spr, false);
+                  setTogglerGrayscale(m_featuredToggleItem, "RL_featuredCoin.png"_spr, false);
             }
-            auto newEpicCoin = CCSprite::create("rlepicFeaturedCoin.png"_spr);
+            auto newEpicCoin = CCSprite::create("RL_epicFeaturedCoin.png"_spr);
             newEpicCoin->setPosition({0, 0});
             newEpicCoin->setScale(1.2f);
             newEpicCoin->setID("epic-featured-coin");
@@ -806,7 +806,7 @@ void RLModRatePopup::onToggleEpicFeatured(CCObject* sender) {
                   }
             }
             if (m_featuredToggleItem) {
-                  setTogglerGrayscale(m_featuredToggleItem, "rlfeaturedCoin.png"_spr, false);
+                  setTogglerGrayscale(m_featuredToggleItem, "RL_featuredCoin.png"_spr, false);
             }
       }
 }

@@ -399,7 +399,7 @@ bool RLEventLayouts::setup() {
                         sec->diff->updateDifficultyFrame(getDifficulty(difficulty), GJDifficultyName::Short);
                         if (featured == 1 || featured == 2) {
                               sec->featured = featured;
-                              const char* coinSprite = (featured == 1) ? "rlfeaturedCoin.png"_spr : "rlepicFeaturedCoin.png"_spr;
+                              const char* coinSprite = (featured == 1) ? "RL_featuredCoin.png"_spr : "RL_epicFeaturedCoin.png"_spr;
                               if (sec->featuredIcon) {
                                     sec->featuredIcon->removeFromParent();
                                     sec->featuredIcon = nullptr;
@@ -492,7 +492,7 @@ bool RLEventLayouts::setup() {
                                     sec->platDiff->updateDifficultyFrame(getDifficulty(platDifficulty), GJDifficultyName::Long);
                                     if (platFeatured == 1 || platFeatured == 2) {
                                           sec->platFeatured = platFeatured;
-                                          const char* coinSprite = (platFeatured == 1) ? "rlfeaturedCoin.png"_spr : "rlepicFeaturedCoin.png"_spr;
+                                          const char* coinSprite = (platFeatured == 1) ? "RL_featuredCoin.png"_spr : "RL_epicFeaturedCoin.png"_spr;
                                           if (sec->platFeaturedIcon) {
                                                 sec->platFeaturedIcon->removeFromParent();
                                                 sec->platFeaturedIcon = nullptr;
