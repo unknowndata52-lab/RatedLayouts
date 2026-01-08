@@ -167,7 +167,9 @@ class $modify(RLProfilePage, ProfilePage) {
 
             auto rlStatsMenu = CCMenu::create();
             rlStatsMenu->setID("rl-stats-menu");
-            rlStatsMenu->setContentSize({200.f, 20.f});
+            rlStatsMenu->setContentSize(statsMenu->getContentSize());
+            rlStatsMenu->setPosition(statsMenu->getPositionX(), statsMenu->getPositionY());
+            rlStatsMenu->setScale(statsMenu->getScale());
 
             auto row = RowLayout::create();
             row->setAxisAlignment(AxisAlignment::Center);
@@ -176,8 +178,6 @@ class $modify(RLProfilePage, ProfilePage) {
             rlStatsMenu->setLayout(row);
 
             rlStatsMenu->setAnchorPoint({0.5f, 0.5f});
-
-            rlStatsMenu->setPositionY(245.f);
 
             auto starsText = GameToolbox::pointsToString(m_fields->m_stars);
             auto planetsText = GameToolbox::pointsToString(m_fields->m_planets);
@@ -318,6 +318,7 @@ class $modify(RLProfilePage, ProfilePage) {
 
             auto pointsText = GameToolbox::pointsToString(pageRef->m_fields->m_points);
             auto rlStatsMenu = pageRef->getChildByIDRecursive("rl-stats-menu");
+            auto statsMenu = pageRef->m_mainLayer->getChildByID("stats-menu");
 
             if (!Mod::get()->getSettingValue<bool>("disableCreatorPoints")) {
                   auto pointsEntry = pageRef->createStatEntry(
@@ -361,8 +362,9 @@ class $modify(RLProfilePage, ProfilePage) {
 
                   auto betterProgSign = pageRef->getChildByIDRecursive("itzkiba.better_progression/tier-bar");
                   if (betterProgSign) {
-                        rlStatsMenu->setScale(0.845f);
-                        rlStatsMenu->setPosition({309.f, 248.f});
+                        rlStatsMenu->setContentSize(statsMenu->getContentSize());
+                        rlStatsMenu->setPosition(statsMenu->getPositionX(), statsMenu->getPositionY());
+                        rlStatsMenu->setScale(statsMenu->getScale());
                   }
 
                   rlStatsMenu->updateLayout();
