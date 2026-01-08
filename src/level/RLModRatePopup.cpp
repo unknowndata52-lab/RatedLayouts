@@ -1,4 +1,4 @@
-#include "ModRatePopup.hpp"
+#include "RLModRatePopup.hpp"
 
 #include <Geode/Geode.hpp>
 
@@ -17,7 +17,7 @@ static void setTogglerGrayscale(CCMenuItemToggler* toggler, const char* spriteNa
       }
 }
 
-bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
+bool RLModRatePopup::setup(std::string title, GJGameLevel* level) {
       m_title = title;
       m_level = level;
       m_difficultySprite = nullptr;
@@ -67,7 +67,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
             buttonBg->setID("button-bg-" + numToString(i));
 
             auto ratingButtonItem = CCMenuItemSpriteExtra::create(
-                buttonBg, this, menu_selector(ModRatePopup::onRatingButton));
+                buttonBg, this, menu_selector(RLModRatePopup::onRatingButton));
 
             if (i <= 5) {
                   ratingButtonItem->setPosition(
@@ -95,7 +95,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
             buttonBg->setID("button-bg-" + numToString(rating));
 
             auto ratingButtonItem = CCMenuItemSpriteExtra::create(
-                buttonBg, this, menu_selector(ModRatePopup::onRatingButton));
+                buttonBg, this, menu_selector(RLModRatePopup::onRatingButton));
 
             ratingButtonItem->setPosition({startX + idx * buttonSpacing, firstRowY});
             ratingButtonItem->setTag(rating);
@@ -112,7 +112,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
             rejectBg->addChild(rejectLabel);
             rejectBg->setID("button-bg-reject");
 
-            auto rejectButton = CCMenuItemSpriteExtra::create(rejectBg, this, menu_selector(ModRatePopup::onRejectButton));
+            auto rejectButton = CCMenuItemSpriteExtra::create(rejectBg, this, menu_selector(RLModRatePopup::onRejectButton));
             // place to the right of the 9 button
             rejectButton->setPosition({startX + 4 * buttonSpacing, firstRowY - 55.f});
             rejectButton->setTag(-2);
@@ -131,7 +131,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
           CCSprite::createWithSpriteFrameName("GJ_demonIcon_001.png");
       auto demonToggle =
           CCMenuItemToggler::create(offDemonSprite, onDemonSprite, this,
-                                    menu_selector(ModRatePopup::onToggleDemon));
+                                    menu_selector(RLModRatePopup::onToggleDemon));
 
       demonToggle->setPosition({m_mainLayer->getContentSize().width, 0});
       demonToggle->setScale(1.2f);
@@ -140,7 +140,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
       // info button
       auto infoButton = CCMenuItemSpriteExtra::create(
           CCSprite::createWithSpriteFrameName("GJ_infoIcon_001.png"), this,
-          menu_selector(ModRatePopup::onInfoButton));
+          menu_selector(RLModRatePopup::onInfoButton));
       infoButton->setPosition({m_mainLayer->getContentSize().width,
                                m_mainLayer->getContentSize().height});
       menuButtons->addChild(infoButton);
@@ -151,7 +151,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
 
       auto submitButtonSpr = ButtonSprite::create("Submit", "goldFont.fnt", "GJ_button_01.png", .8f);
       auto submitButtonItem = CCMenuItemSpriteExtra::create(
-          submitButtonSpr, this, menu_selector(ModRatePopup::onSubmitButton));
+          submitButtonSpr, this, menu_selector(RLModRatePopup::onSubmitButton));
 
       if (userRole == 2) {
             // when admin, arrange Submit / Unrate / Suggest evenly around center
@@ -170,7 +170,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
 
             auto unreateSpr = ButtonSprite::create("Unrate", .8f);
             auto unrateButtonItem = CCMenuItemSpriteExtra::create(
-                unreateSpr, this, menu_selector(ModRatePopup::onUnrateButton));
+                unreateSpr, this, menu_selector(RLModRatePopup::onUnrateButton));
 
             unrateButtonItem->setPosition({centerX, 0});
             menuButtons->addChild(unrateButtonItem);
@@ -178,7 +178,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
             // suggest button for admin
             auto suggestSpr = ButtonSprite::create("Suggest", .8f);
             auto suggestButtonItem = CCMenuItemSpriteExtra::create(
-                suggestSpr, this, menu_selector(ModRatePopup::onSuggestButton));
+                suggestSpr, this, menu_selector(RLModRatePopup::onSuggestButton));
             suggestButtonItem->setPosition({centerX + spacing, 0});
             suggestButtonItem->setID("suggest-button");
             menuButtons->addChild(suggestButtonItem);
@@ -188,7 +188,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
       auto offSprite = CCSpriteGrayscale::create("rlfeaturedCoin.png"_spr);
       auto onSprite = CCSprite::create("rlfeaturedCoin.png"_spr);
       auto toggleFeatured = CCMenuItemToggler::create(
-          offSprite, onSprite, this, menu_selector(ModRatePopup::onToggleFeatured));
+          offSprite, onSprite, this, menu_selector(RLModRatePopup::onToggleFeatured));
       m_featuredToggleItem = toggleFeatured;
 
       toggleFeatured->setPosition({0, -10});
@@ -200,7 +200,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
             auto offEpicSprite = CCSpriteGrayscale::create("rlepicFeaturedCoin.png"_spr);
             auto onEpicSprite = CCSprite::create("rlepicFeaturedCoin.png"_spr);
             auto toggleEpicFeatured = CCMenuItemToggler::create(
-                offEpicSprite, onEpicSprite, this, menu_selector(ModRatePopup::onToggleEpicFeatured));
+                offEpicSprite, onEpicSprite, this, menu_selector(RLModRatePopup::onToggleEpicFeatured));
             m_epicFeaturedToggleItem = toggleEpicFeatured;
             toggleEpicFeatured->setPosition({0, 50});
             menuButtons->addChild(toggleEpicFeatured);
@@ -232,7 +232,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
 
             for (size_t i = 0; i < events.size(); ++i) {
                   auto btnSpr = ButtonSprite::create(std::get<2>(events[i]).c_str(), 1.f);
-                  auto btnItem = CCMenuItemSpriteExtra::create(btnSpr, this, menu_selector(ModRatePopup::onSetEventButton));
+                  auto btnItem = CCMenuItemSpriteExtra::create(btnSpr, this, menu_selector(RLModRatePopup::onSetEventButton));
                   btnItem->setPosition({eventX, eventYStart - (float)i * eventSpacing});
                   btnItem->setID(std::get<0>(events[i]));
                   eventMenu->addChild(btnItem);
@@ -251,7 +251,7 @@ bool ModRatePopup::setup(std::string title, GJGameLevel* level) {
       return true;
 }
 
-void ModRatePopup::onInfoButton(CCObject* sender) {
+void RLModRatePopup::onInfoButton(CCObject* sender) {
       // matjson payload
 
       matjson::Value jsonBody = matjson::Value::object();
@@ -264,7 +264,7 @@ void ModRatePopup::onInfoButton(CCObject* sender) {
       postReq.bodyJSON(jsonBody);
       auto postTask = postReq.post("https://gdrate.arcticwoof.xyz/getModLevel");
 
-      Ref<ModRatePopup> self = this;
+      Ref<RLModRatePopup> self = this;
       postTask.listen([self](web::WebResponse* response) {
             if (!self) return;
             log::info("Received response from server");
@@ -309,7 +309,7 @@ void ModRatePopup::onInfoButton(CCObject* sender) {
       });
 }
 
-void ModRatePopup::onSubmitButton(CCObject* sender) {
+void RLModRatePopup::onSubmitButton(CCObject* sender) {
       auto popup = UploadActionPopup::create(nullptr, "Submitting layout...");
       popup->show();
       log::info("Submitting - Difficulty: {}, Featured: {}, Demon: {}, Rejected: {}",
@@ -362,9 +362,9 @@ void ModRatePopup::onSubmitButton(CCObject* sender) {
 
       auto postReq = web::WebRequest();
       postReq.bodyJSON(jsonBody);
-      auto postTask = postReq.post("https://gdrate.arcticwoof.xyz/rate");
+      auto postTask = postReq.post("https://gdrate.arcticwoof.xyz/setRate");
 
-      Ref<ModRatePopup> self = this;
+      Ref<RLModRatePopup> self = this;
       Ref<UploadActionPopup> upopup = popup;
       postTask.listen([self, upopup](web::WebResponse* response) {
             if (!self || !upopup) return;
@@ -416,7 +416,7 @@ void ModRatePopup::onSubmitButton(CCObject* sender) {
       });
 }
 
-void ModRatePopup::onUnrateButton(CCObject* sender) {
+void RLModRatePopup::onUnrateButton(CCObject* sender) {
       auto popup = UploadActionPopup::create(nullptr, "Unrating layout...");
       popup->show();
       log::info("Unrate button clicked");
@@ -465,7 +465,7 @@ void ModRatePopup::onUnrateButton(CCObject* sender) {
       postReq.bodyJSON(jsonBody);
       auto postTask = postReq.post("https://gdrate.arcticwoof.xyz/setUnrate");
 
-      Ref<ModRatePopup> self = this;
+      Ref<RLModRatePopup> self = this;
       Ref<UploadActionPopup> upopup = popup;
       postTask.listen([self, upopup](web::WebResponse* response) {
             if (!self || !upopup) return;
@@ -517,7 +517,7 @@ void ModRatePopup::onUnrateButton(CCObject* sender) {
       });
 }
 
-void ModRatePopup::onRejectButton(CCObject* sender) {
+void RLModRatePopup::onRejectButton(CCObject* sender) {
       auto btn = static_cast<CCMenuItemSpriteExtra*>(sender);
       if (!btn) return;
 
@@ -563,7 +563,7 @@ void ModRatePopup::onRejectButton(CCObject* sender) {
       updateDifficultySprite(0);
 }
 
-void ModRatePopup::onSuggestButton(CCObject* sender) {
+void RLModRatePopup::onSuggestButton(CCObject* sender) {
       auto popup = UploadActionPopup::create(nullptr, "Suggesting layout...");
       popup->show();
       log::info("Suggest button clicked");
@@ -617,9 +617,9 @@ void ModRatePopup::onSuggestButton(CCObject* sender) {
 
       auto postReq = web::WebRequest();
       postReq.bodyJSON(jsonBody);
-      auto postTask = postReq.post("https://gdrate.arcticwoof.xyz/rate");
+      auto postTask = postReq.post("https://gdrate.arcticwoof.xyz/setRate");
 
-      Ref<ModRatePopup> self = this;
+      Ref<RLModRatePopup> self = this;
       Ref<UploadActionPopup> upopup = popup;
       postTask.listen([self, upopup](web::WebResponse* response) {
             if (!self || !upopup) return;
@@ -671,7 +671,7 @@ void ModRatePopup::onSuggestButton(CCObject* sender) {
       });
 }
 
-void ModRatePopup::onToggleFeatured(CCObject* sender) {
+void RLModRatePopup::onToggleFeatured(CCObject* sender) {
       // compute userRole from popup role
       int userRole = (m_role == PopupRole::Admin) ? 2 : ((m_role == PopupRole::Mod) ? 1 : 0);
 
@@ -742,14 +742,14 @@ void ModRatePopup::onToggleFeatured(CCObject* sender) {
       }
 }
 
-void ModRatePopup::onToggleDemon(CCObject* sender) {
+void RLModRatePopup::onToggleDemon(CCObject* sender) {
       m_isDemonMode = !m_isDemonMode;
 
       m_normalButtonsContainer->setVisible(!m_isDemonMode);
       m_demonButtonsContainer->setVisible(m_isDemonMode);
 }
 
-void ModRatePopup::onToggleEpicFeatured(CCObject* sender) {
+void RLModRatePopup::onToggleEpicFeatured(CCObject* sender) {
       int userRole = (m_role == PopupRole::Admin) ? 2 : ((m_role == PopupRole::Mod) ? 1 : 0);
       m_isEpicFeatured = !m_isEpicFeatured;
 
@@ -811,7 +811,7 @@ void ModRatePopup::onToggleEpicFeatured(CCObject* sender) {
       }
 }
 
-void ModRatePopup::onRatingButton(CCObject* sender) {
+void RLModRatePopup::onRatingButton(CCObject* sender) {
       auto button = static_cast<CCMenuItemSpriteExtra*>(sender);
       int rating = button->getTag();
 
@@ -872,7 +872,7 @@ void ModRatePopup::onRatingButton(CCObject* sender) {
       updateDifficultySprite(rating);
 }
 
-void ModRatePopup::updateDifficultySprite(int rating) {
+void RLModRatePopup::updateDifficultySprite(int rating) {
       if (m_difficultySprite) {
             m_difficultySprite->removeFromParent();
       }
@@ -928,7 +928,7 @@ void ModRatePopup::updateDifficultySprite(int rating) {
       m_difficultyContainer->addChild(m_difficultySprite);
 }
 
-void ModRatePopup::onSetEventButton(CCObject* sender) {
+void RLModRatePopup::onSetEventButton(CCObject* sender) {
       auto item = static_cast<CCMenuItemSpriteExtra*>(sender);
       if (!item) return;
       // mapping by ID
@@ -979,7 +979,7 @@ void ModRatePopup::onSetEventButton(CCObject* sender) {
                 postReq.bodyJSON(jsonBody);
                 auto postTask = postReq.post("https://gdrate.arcticwoof.xyz/setEvent");
 
-                Ref<ModRatePopup> self = this;
+                Ref<RLModRatePopup> self = this;
                 Ref<UploadActionPopup> upopup = popup;
                 postTask.listen([self, type, upopup](web::WebResponse* response) {
                       if (!self || !upopup) return;
@@ -1007,8 +1007,8 @@ void ModRatePopup::onSetEventButton(CCObject* sender) {
           });
 }
 
-ModRatePopup* ModRatePopup::create(ModRatePopup::PopupRole role, std::string title, GJGameLevel* level) {
-      auto ret = new ModRatePopup();
+RLModRatePopup* RLModRatePopup::create(RLModRatePopup::PopupRole role, std::string title, GJGameLevel* level) {
+      auto ret = new RLModRatePopup();
       ret->m_role = role;
 
       if (ret && ret->initAnchored(380.f, 180.f, title, level, "GJ_square02.png")) {

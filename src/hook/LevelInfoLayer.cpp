@@ -3,8 +3,8 @@
 #include <Geode/modify/LevelInfoLayer.hpp>
 #include <argon/argon.hpp>
 
-#include "ModRatePopup.hpp"
-#include "RLCommunityVotePopup.hpp"
+#include "../level/RLCommunityVotePopup.hpp"
+#include "../level/RLModRatePopup.hpp"
 
 using namespace geode::prelude;
 
@@ -619,8 +619,11 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
 
                         // compute absolute base and set absolute Y to avoid drift
                         float baseY = layerRef->m_fields->m_originalDifficultySpriteY;
+                        bool coinPresent = coinIcon1 != nullptr;
+                        log::debug("Applying difficulty offset (processLevelRating): baseY={}, isDemon={}, coinPresent={}", baseY, isDemon, coinPresent);
                         float newY = baseY + (isDemon ? 15.f : 10.f);
                         sprite->setPositionY(newY);
+                        log::debug("Sprite Y after apply (processLevelRating): {}", sprite->getPositionY());
                         layerRef->m_fields->m_difficultyOffsetApplied = true;
 
                         // set coin absolute positions based on saved originals
@@ -632,13 +635,17 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                         // No coins, but still apply offset for levels without coins
                         // save original Y so we can revert on refresh
                         if (!layerRef->m_fields->m_originalYSaved) {
-                              layerRef->m_fields->m_originalDifficultySpriteY = sprite->getPositionY();
+                              float currentY = sprite->getPositionY();
+                              log::debug("Saving originalDifficultySpriteY (no coins): {}", currentY);
+                              layerRef->m_fields->m_originalDifficultySpriteY = currentY;
                               layerRef->m_fields->m_originalYSaved = true;
                         }
                         layerRef->m_fields->m_lastAppliedIsDemon = isDemon;
                         float baseY = layerRef->m_fields->m_originalDifficultySpriteY;
+                        log::debug("Applying difficulty offset (no coins): baseY={}, isDemon={}", baseY, isDemon);
                         float newY = baseY + (isDemon ? 15.f : 10.f);
                         sprite->setPositionY(newY);
+                        log::debug("Sprite Y after apply (no coins): {}", sprite->getPositionY());
                         layerRef->m_fields->m_difficultyOffsetApplied = true;
                   }
             }
@@ -671,53 +678,6 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                         if (featuredCoin) featuredCoin->removeFromParent();
                         if (epicFeaturedCoin) epicFeaturedCoin->removeFromParent();
                   }
-            }
-      }
-
-      // this shouldnt exist but it must be done to fix that positions
-      void levelUpdateFinished(GJGameLevel* level, UpdateResponse response) {
-            LevelInfoLayer::levelUpdateFinished(level, response);
-
-            auto difficultySprite = this->getChildByID("difficulty-sprite");
-            if (difficultySprite && m_fields->m_difficultyOffsetApplied) {
-                  auto sprite = static_cast<GJDifficultySprite*>(difficultySprite);
-
-                  int levelId = this->m_level->m_levelID;
-
-                  // Try to load from cache first
-                  auto cachedData = getCachedLevel(levelId);
-
-                  Ref<RLLevelInfoLayer> layerRef = this;
-
-                  if (cachedData) {
-                        log::debug("Using cached data for levelUpdateFinished");
-                        processLevelUpdateWithDifficulty(cachedData.value(), layerRef);
-                        return;
-                  }
-
-                  auto getReq = web::WebRequest();
-                  auto getTask = getReq.get(fmt::format(
-                      "https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId));
-
-                  getTask.listen([layerRef](web::WebResponse* response) {
-                        if (!layerRef) {
-                              log::warn(
-                                  "LevelInfoLayer has been destroyed, skipping level "
-                                  "update");
-                              return;
-                        }
-
-                        if (!response->ok() || !response->json()) {
-                              return;
-                        }
-
-                        auto json = response->json().unwrap();
-
-                        // Cache the response
-                        cacheLevelData(layerRef->m_level->m_levelID, json);
-
-                        layerRef->processLevelUpdateWithDifficulty(json, layerRef, true);
-                  });
             }
       }
 
@@ -956,15 +916,10 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
 
                   layerRef->m_fields->m_lastAppliedIsDemon = isDemon;
                   float baseY = layerRef->m_fields->m_originalDifficultySpriteY;
-
-                  if (isDemon) {
-                        float newY = baseY + (coinIcon1 ? 20.f : 10.f);
-                        sprite->setPositionY(newY);
-                  } else {
-                        sprite->setPositionY(baseY + 10.f);
-                  }
-
-                  layerRef->m_fields->m_difficultyOffsetApplied = true;
+                  log::debug("Applying difficulty offset (processLevelUpdateWithDifficulty): originalYSaved={}, baseY={}, isDemon={}", layerRef->m_fields->m_originalYSaved, baseY, isDemon);
+                  float newY = baseY + (isDemon ? 15.f : 10.f);
+                  sprite->setPositionY(newY);
+                  log::debug("Sprite Y after apply (processLevelUpdateWithDifficulty): {}", sprite->getPositionY());
 
                   if (coinIcon1) {
                         int delta = isDemon ? 6 : 4;
@@ -1012,11 +967,11 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                   // proper positioning
                   auto delayAction = CCDelayTime::create(0.15f);
                   auto callFunc = CCCallFunc::create(
-                      layerRef, callfunc_selector(RLLevelInfoLayer::repositionStars));
+                      layerRef, callfunc_selector(RLLevelInfoLayer::repositionRLStars));
                   auto sequence = CCSequence::create(delayAction, callFunc, nullptr);
                   layerRef->runAction(sequence);
                   log::debug(
-                      "levelUpdateFinished: repositionStars callback "
+                      "levelUpdateFinished: repositionRLStars callback "
                       "scheduled");
             }
       }
@@ -1041,11 +996,11 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
 
             if (userRole == 1) {
                   log::info("Role button clicked as Mod");
-                  auto popup = ModRatePopup::create(ModRatePopup::PopupRole::Mod, "Mod: Suggest Layout", this->m_level);
+                  auto popup = RLModRatePopup::create(RLModRatePopup::PopupRole::Mod, "Mod: Suggest Layout", this->m_level);
                   if (popup) popup->show();
             } else if (userRole == 2) {
                   log::info("Role button clicked as Admin");
-                  auto popup = ModRatePopup::create(ModRatePopup::PopupRole::Admin, "Admin: Rate Layout", this->m_level);
+                  auto popup = RLModRatePopup::create(RLModRatePopup::PopupRole::Admin, "Admin: Rate Layout", this->m_level);
                   if (popup) popup->show();
             }
       }
@@ -1080,8 +1035,8 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
       }
 
       // bruh
-      void repositionStars() {
-            log::info("repositionStars() called!");
+      void repositionRLStars() {
+            log::info("repositionRLStars() called!");
             auto difficultySprite = this->getChildByID("difficulty-sprite");
             if (difficultySprite) {
                   auto sprite = static_cast<GJDifficultySprite*>(difficultySprite);
@@ -1197,14 +1152,61 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
       }
 
       void likedItem(LikeItemType type, int id, bool liked) override {
-            // call base implementation
             LevelInfoLayer::likedItem(type, id, liked);
-            log::debug("likedItem triggered (type={}, id={}, liked={}), repositioning star", static_cast<int>(type), id, liked);
-            this->repositionStars();
+            this->updateRLLevelInfo();
       }
 
-      // refresh rating data when level is refreshed
-      void onRefresh() {
+      // this shouldnt exist but it must be done to fix that positions
+      void levelUpdateFinished(GJGameLevel* level, UpdateResponse response) override {
+            LevelInfoLayer::levelUpdateFinished(level, response);
+            this->updateRLLevelInfo();
+      }
+
+      void updateRLLevelInfo() {
+            auto difficultySpriteNode = this->getChildByID("difficulty-sprite");
+            if (difficultySpriteNode) {
+                  // remove star icon and label if present
+                  auto starIcon = difficultySpriteNode->getChildByID("rl-star-icon");
+                  if (starIcon) starIcon->removeFromParent();
+                  auto starLabel = difficultySpriteNode->getChildByID("rl-star-label");
+                  if (starLabel) starLabel->removeFromParent();
+
+                  // remove featured/epic coins if present
+                  auto featuredCoin = difficultySpriteNode->getChildByID("featured-coin");
+                  if (featuredCoin) featuredCoin->removeFromParent();
+                  auto epicFeaturedCoin = difficultySpriteNode->getChildByID("epic-featured-coin");
+                  if (epicFeaturedCoin) epicFeaturedCoin->removeFromParent();
+
+                  // reset difficulty frame to NA and revert any applied offsets
+                  auto sprite = static_cast<GJDifficultySprite*>(difficultySpriteNode);
+                  sprite->updateDifficultyFrame(0, GJDifficultyName::Long);
+
+                  if (this->m_fields->m_originalYSaved) {
+                        log::debug("restoring original Y (originalYSaved={}, originalY={})", this->m_fields->m_originalYSaved, this->m_fields->m_originalDifficultySpriteY);
+                        sprite->setPositionY(this->m_fields->m_originalDifficultySpriteY);
+                        auto coinIcon1 = this->getChildByID("coin-icon-1");
+                        auto coinIcon2 = this->getChildByID("coin-icon-2");
+                        auto coinIcon3 = this->getChildByID("coin-icon-3");
+                        if (this->m_fields->m_originalCoinsSaved) {
+                              if (coinIcon1) coinIcon1->setPositionY(this->m_fields->m_originalCoin1Y);
+                              if (coinIcon2) coinIcon2->setPositionY(this->m_fields->m_originalCoin2Y);
+                              if (coinIcon3) coinIcon3->setPositionY(this->m_fields->m_originalCoin3Y);
+                        }
+
+                        // reset flags so next fetch can apply offsets cleanly
+                        this->m_fields->m_difficultyOffsetApplied = false;
+                        this->m_fields->m_originalYSaved = false;
+                        this->m_fields->m_lastAppliedIsDemon = false;
+                        this->m_fields->m_originalCoinsSaved = false;
+                  }
+            }
+
+            // reposition (cleared state) and then fetch fresh data to re-apply rating
+            this->repositionRLStars();
+            this->fetchRLLevelInfo();
+      }
+
+      void fetchRLLevelInfo() {
             if (this->m_level && this->m_level->m_levelID != 0) {
                   log::debug("Refreshing level info for level ID: {}",
                              this->m_level->m_levelID);
@@ -1322,8 +1324,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                   log::debug("Level updated, clearing cache for level ID: {}",
                              this->m_level->m_levelID);
                   deleteLevelFromCache(this->m_level->m_levelID);
-                  this->repositionStars();
-                  this->onRefresh();
+                  this->repositionRLStars();
             }
             LevelInfoLayer::onUpdate(sender);
       }

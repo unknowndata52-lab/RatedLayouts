@@ -27,7 +27,7 @@ bool RLReportPopup::setup() {
           menu_selector(RLReportPopup::onSubmit));
 
       m_buttonMenu->addChild(reportButton);
-      reportButton->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, 0.f});
+      reportButton->setPosition({m_mainLayer->getScaledContentSize().width / 2.f, 25.f});
 
       // info button
       auto infoSpr = CCSprite::createWithSpriteFrameName("GJ_infoIcon_001.png");
@@ -105,7 +105,7 @@ void RLReportPopup::onSubmit(CCObject* sender) {
 
       createQuickPopup(
           "Report Level",
-          "Are you sure you want to report this level? Our moderators will review your report and take appropriate action.",
+          "Are you sure you want to report this level?\n<cy>Layout moderators/admins will review your report and take appropriate action.</c>\n<cr>False reports will lead to your account being blacklisted from reporting layouts.</c>",
           "Cancel", "Report",
           [this](auto, bool yes) {
                 if (!yes) return;
@@ -222,16 +222,16 @@ void RLReportPopup::onInfo(CCObject* sender) {
       MDPopup::create(
           "Reporting Rated Layouts",
           "Use the toggles to select the reason(s) for <cr>reporting</c> this Rated Layout. You can select <cg>multiple reasons if applicable</c>.\n\n"
-          "If your reason is not listed, you can use the <cy>'Reasons'</c> input field to provide additional context.\n\n"
+          "To provide additional context, you can provide details in the <cy>'Reasons'</c> input field.\n\n"
           "Once you submit the report, <cl>Layout Moderators</c> or <cr>Layout Admins</c> will review it and take <cg>appropriate action</c> based on our Rated Layouts guidelines.\n\n"
           "List of report reasons:\n"
-          "- <cy>**Plagiarism:**</c> Layout is either stolen levels/layouts or directly copied from a decorated/officially rated level *(eg. removing the entire decoration of an existing level and claiming it as your own)*\n"
-          "- <cg>**Secret Way:**</c> Layout contains secret way/swag routes that allows players to beat the entire level without actually playing it.\n"
-          "- <co>**Low Effort:**</c> Layout contains minimal effort or creativity in terms of gameplay.\n"
-          "- <cl>**Unverified:**</c> Layout hasn't been beaten legit or hasn't been actually verified.\n"
-          "- <cr>**NSFW Content:**</c> Layout contains inappropriate or explicit content. *(Mainly subjective or sexual themed)*\n"
-          "- <cp>**Misrate:**</c> Level was rated incorrectly like ratings or difficulty is set wrong.\n"
-          "- <cf>**Decorated:**</c> Layout has been heavily/partically decorated or to the point that the level itself is not a layout or possibly can be officially rated.",
+          "- <cy>**Plagiarism:**</c> The layout is either stolen or directly copied from a decorated or officially rated level *(e.g., removing the decorations from an existing level and claiming it as your own)*.\n"
+          "- <cg>**Secret Way:**</c> The layout contains secret ways or 'swag routes' that allow players to beat the level without actually playing through the intended path.\n"
+          "- <co>**Low Effort:**</c> The layout shows minimal effort or a lack of creativity regarding gameplay.\n"
+          "- <cl>**Unverified:**</c> The layout has not been beaten legitimately or has not been properly verified.\n"
+          "- <cr>**NSFW Content:**</c> The layout contains NSFW *(explicit/suggestive)*, sensitive *(political/religious/controversial)*, or harassing imagery and text.\n"
+          "- <cp>**Misrate:**</c> The level was rated incorrectly, such as having the wrong difficulty or rating category assigned.\n"
+          "- <cf>**Decorated:**</c> The layout has been heavily or partially decorated to the point where it is no longer a 'layout' and could potentially be officially rated in-game.",
           "OK")
           ->show();
 }

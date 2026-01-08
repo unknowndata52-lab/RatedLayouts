@@ -66,6 +66,14 @@ class $modify(RLLInfoLayer, InfoLayer) {
       };
 
       void onReportButton(CCObject* sender) {
+            if (GJAccountManager::sharedState()->m_accountID == 0) {
+                  FLAlertLayer::create(
+                      "Rated Layouts",
+                      "You must be <cg>logged in</c> to access this feature in <cl>Rated Layouts.</c>",
+                      "OK")
+                      ->show();
+                  return;
+            }
             auto reportPopup = RLReportPopup::create(m_level->m_levelID);
             if (reportPopup) reportPopup->show();
       }

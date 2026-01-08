@@ -157,16 +157,23 @@ bool RLDifficultyTotalPopup::setup() {
       m_mainLayer->addChild(spinner);
       m_spinner = spinner;
 
+      // remove close button
+      if (auto closeBtn = this->m_closeBtn) {
+            closeBtn->removeFromParent();
+      }
+
+      // ok (close)
+      auto closeBtnSpr = ButtonSprite::create("OK", "goldFont.fnt", "GJ_button_01.png");
+      auto closeBtn = CCMenuItemSpriteExtra::create(closeBtnSpr, this, menu_selector(RLDifficultyTotalPopup::onClose));
+      closeBtn->setPosition({contentSize.width / 2.f, 25.f});
+      m_buttonMenu->addChild(closeBtn);
       // demon toggle
       auto demonOff = CCSpriteGrayscale::createWithSpriteFrameName("GJ_demonIcon_001.png");
       auto demonOn = CCSprite::createWithSpriteFrameName("GJ_demonIcon_001.png");
       auto demonToggle = CCMenuItemToggler::create(demonOff, demonOn, this, menu_selector(RLDifficultyTotalPopup::onDemonToggle));
       demonToggle->setScale(1.0f);
       demonToggle->setPosition({contentSize.width - 25.f, contentSize.height - 25.f});
-      auto toggleMenu = CCMenu::create();
-      toggleMenu->setPosition({0, 0});
-      toggleMenu->addChild(demonToggle);
-      m_mainLayer->addChild(toggleMenu);
+      m_buttonMenu->addChild(demonToggle);
 
       m_rankLabel = CCLabelBMFont::create("-", "goldFont.fnt");
       m_rankLabel->setScale(0.4f);

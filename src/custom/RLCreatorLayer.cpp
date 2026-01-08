@@ -415,7 +415,7 @@ void RLCreatorLayer::onInfoButton(CCObject* sender) {
           "<cg>**Sent Layouts**</c>: Suggested or sent layouts by the Layout Moderators. The community can vote on these layouts based of their Design, Difficulty and Gameplay. <co>(Only enabled if you have at least 20% in Normal Mode or 80% in Practice Mode)</c>\n\n"
           "<cg>**Search Layouts**</c>: Search for rated layouts by their level name/ID.\n\n"
           "<cg>**Event Layouts**</c>: Showcases time-limited Daily, Weekly and Monthly layouts picked by the <cr>Layout Admins</c>.\n\n"
-          "### Join the <cb>[Rated Layout Discord](https://discord.gg/jBf2wfBgVT)</c> server for more information and to submit your layouts for rating.\n\n",
+          "### Join the <cb>[Rated Layouts Discord](https://discord.gg/jBf2wfBgVT)</c> server for more information and to submit your layouts for rating.\n\n",
           "OK")
           ->show();
 }

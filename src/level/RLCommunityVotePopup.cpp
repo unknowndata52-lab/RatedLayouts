@@ -229,12 +229,9 @@ bool RLCommunityVotePopup::setup() {
       // submit button
       auto submitSpr = ButtonSprite::create("Submit", "goldFont.fnt", "GJ_button_01.png");
       auto submitBtn = CCMenuItemSpriteExtra::create(submitSpr, this, menu_selector(RLCommunityVotePopup::onSubmit));
-      submitBtn->setPosition({m_mainLayer->getContentSize().width / 2.f, 0});
+      submitBtn->setPosition({m_mainLayer->getContentSize().width / 2.f, 25.f});
       m_submitBtn = submitBtn;
-      auto submitMenu = CCMenu::create();
-      submitMenu->setPosition({0, 0});
-      submitMenu->addChild(submitBtn);
-      m_mainLayer->addChild(submitMenu, 3);
+      m_buttonMenu->addChild(submitBtn);
 
       // total votes label
       m_totalVotesLabel = CCLabelBMFont::create("Total votes: -", "goldFont.fnt");
