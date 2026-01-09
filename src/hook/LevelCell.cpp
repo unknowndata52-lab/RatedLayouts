@@ -315,7 +315,7 @@ class $modify(LevelCell) {
                               }
 
                               auto replaceCoinSprite = [levelPtr, this](CCNode* coinNode, int coinIndex) {
-                                    auto blueCoinTexture = CCTextureCache::sharedTextureCache()->addImage("RL_BlueCoin1.png"_spr, false);
+                                    auto blueCoinTexture = CCTextureCache::sharedTextureCache()->addImage("RL_BlueCoinSmall.png"_spr, false);
                                     auto displayFrame = CCSpriteFrame::createWithTexture(blueCoinTexture, {{0, 0}, blueCoinTexture->getContentSize()});
                                     if (!coinNode) return;
                                     auto coinSprite = typeinfo_cast<CCSprite*>(coinNode);
@@ -332,17 +332,17 @@ class $modify(LevelCell) {
                                           coinSprite->setDisplayFrame(displayFrame);
                                           coinSprite->setColor({255, 255, 255});
                                           coinSprite->setOpacity(255);
-                                          coinSprite->setScale(0.3f);
+                                          coinSprite->setScale(0.6f);
                                           log::debug("LevelCell: replaced coin {} with blue sprite", coinIndex);
                                     } else {
                                           coinSprite->setDisplayFrame(displayFrame);
                                           coinSprite->setColor({120, 120, 120});
-                                          coinSprite->setScale(0.3f);
+                                          coinSprite->setScale(0.6f);
                                           log::debug("LevelCell: darkened coin {} (not present)", coinIndex);
                                     }
 
                                     if (m_compactView) {
-                                          coinSprite->setScale(0.25f);
+                                          coinSprite->setScale(0.5f);
                                     }
                               };
 

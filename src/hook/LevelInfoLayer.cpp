@@ -373,6 +373,25 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
 
                   log::debug("Submitting completion with attempts: {} time: {} jumps: {} clicks: {}", attempts, attemptTime, jumps, clicks);
 
+                  // Build comma-separated coins list based on pending user coins
+                  std::string coinsStr;
+                  if (layerRef && layerRef->m_level) {
+                        std::vector<int> coins;
+                        for (int i = 1; i <= 3; ++i) {
+                              auto coinKey = layerRef->m_level->getCoinKey(i);
+                              if (GameStatsManager::sharedState()->hasPendingUserCoin(coinKey)) {
+                                    coins.push_back(i);
+                              }
+                        }
+                        for (size_t idx = 0; idx < coins.size(); ++idx) {
+                              if (idx) coinsStr += ",";
+                              coinsStr += std::to_string(coins[idx]);
+                        }
+                  } else {
+                        log::warn("Unable to build coins list: level pointer is null for levelId {}", levelId);
+                  }
+                  log::debug("Collected pending coins for level {}: {}", levelId, coinsStr);
+
                   matjson::Value jsonBody;
                   jsonBody["accountId"] = accountId;
                   jsonBody["argonToken"] = argonToken;
@@ -382,6 +401,9 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                   jsonBody["jumps"] = jumps;
                   jsonBody["clicks"] = clicks;
                   jsonBody["isPlat"] = isPlat;
+                  if (!coinsStr.empty()) {
+                        jsonBody["coins"] = coinsStr;
+                  }
 
                   auto submitReq = web::WebRequest();
                   submitReq.bodyJSON(jsonBody);
@@ -417,6 +439,10 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                                   responseStars);
 
                         if (success) {
+                              if (responseStars == 0 && responsePlanets == 0) {
+                                    log::warn("No stars or planets rewarded, possibly already rewarded before");
+                                    return;
+                              }
                               bool isPlat = false;
                               if (layerRef && layerRef->m_level) isPlat = layerRef->m_level->isPlatformer();
                               log::info("submitComplete values - stars: {}, planets: {}", responseStars, responsePlanets);
@@ -693,18 +719,18 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                         std::string coinKey = layerRef->m_level->getCoinKey(coinIndex);
                         log::debug("Checking coin collected status for coin {}: key={}", coinIndex, coinKey);
                         bool coinCollected = GameStatsManager::sharedState()->hasPendingUserCoin(coinKey.c_str());
-                        auto blueCoinTexture = CCTextureCache::sharedTextureCache()->addImage("RL_BlueCoin1.png"_spr, false);
+                        auto blueCoinTexture = CCTextureCache::sharedTextureCache()->addImage("RL_BlueCoinSmall.png"_spr, false);
                         auto displayFrame = CCSpriteFrame::createWithTexture(blueCoinTexture, {{0, 0}, blueCoinTexture->getContentSize()});
 
                         if (coinCollected) {
                               coinSprite->setDisplayFrame(displayFrame);
                               coinSprite->setColor({255, 255, 255});
-                              coinSprite->setScale(0.3f);
-                              log::debug("Replaced coin {} sprite with RL_BlueCoin1.png", coinIndex);
+                              coinSprite->setScale(0.6f);
+                              log::debug("Replaced coin {} sprite with blue coin", coinIndex);
                         } else {
                               coinSprite->setDisplayFrame(displayFrame);
                               coinSprite->setColor({120, 120, 120});
-                              coinSprite->setScale(0.3f);
+                              coinSprite->setScale(0.6f);
                               log::debug("Darkened coin {} because not collected", coinIndex);
                         }
                   };

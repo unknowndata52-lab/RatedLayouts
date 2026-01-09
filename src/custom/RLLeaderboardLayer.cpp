@@ -77,7 +77,7 @@ bool RLLeaderboardLayer::init() {
       backButton->setPosition({25, winSize.height - 25});
       backMenu->addChild(backButton);
       this->addChild(backMenu);
-      
+
       this->fetchLeaderboard(1, 100);
 
       auto listLayer = GJListLayer::create(nullptr, nullptr, {191, 114, 62, 255},
@@ -118,9 +118,13 @@ bool RLLeaderboardLayer::init() {
           "Top Sparks",
           this,
           menu_selector(RLLeaderboardLayer::onLeaderboardTypeButton));
+      float centerX = listLayer->getContentSize().width / 2.f;
+      const float tabY = 247.f;
+      const float spacing = 100.f;
+
       starsTab->setTag(1);
       starsTab->toggle(true);
-      starsTab->setPosition({178.f - 120, 247.f});
+      starsTab->setPosition({centerX - 1.5f * spacing, tabY});
       typeMenu->addChild(starsTab);
       m_starsTab = starsTab;
 
@@ -131,7 +135,7 @@ bool RLLeaderboardLayer::init() {
           menu_selector(RLLeaderboardLayer::onLeaderboardTypeButton));
       planetsTab->setTag(3);
       planetsTab->toggle(false);
-      planetsTab->setPosition({178.f, 247.f});
+      planetsTab->setPosition({centerX - 0.5f * spacing, tabY});
       typeMenu->addChild(planetsTab);
       m_planetsTab = planetsTab;
 
@@ -142,9 +146,21 @@ bool RLLeaderboardLayer::init() {
           menu_selector(RLLeaderboardLayer::onLeaderboardTypeButton));
       creatorTab->setTag(2);
       creatorTab->toggle(false);
-      creatorTab->setPosition({178.f + 120, 247.f});
+      creatorTab->setPosition({centerX + 0.5f * spacing, tabY});
       typeMenu->addChild(creatorTab);
       m_creatorTab = creatorTab;
+
+      // Top Coins tab (type 4)
+      auto coinsTab = TabButton::create(
+          TabBaseColor::Unselected,
+          TabBaseColor::UnselectedDark,
+          "Top Coins", this,
+          menu_selector(RLLeaderboardLayer::onLeaderboardTypeButton));
+      coinsTab->setTag(4);
+      coinsTab->toggle(false);
+      coinsTab->setPosition({centerX + 1.5f * spacing, tabY});
+      typeMenu->addChild(coinsTab);
+      m_coinsTab = coinsTab;
 
       if (Mod::get()->getSettingValue<bool>("disableCreatorPoints") == true) {
             if (m_creatorTab) {
@@ -239,14 +255,22 @@ void RLLeaderboardLayer::onLeaderboardTypeButton(CCObject* sender) {
             m_starsTab->toggle(true);
             m_planetsTab->toggle(false);
             m_creatorTab->toggle(false);
+            if (m_coinsTab) m_coinsTab->toggle(false);
       } else if (type == 3 && !m_planetsTab->isToggled()) {
             m_starsTab->toggle(false);
             m_planetsTab->toggle(true);
             m_creatorTab->toggle(false);
+            if (m_coinsTab) m_coinsTab->toggle(false);
       } else if (type == 2 && !m_creatorTab->isToggled()) {
             m_starsTab->toggle(false);
             m_planetsTab->toggle(false);
             m_creatorTab->toggle(true);
+            if (m_coinsTab) m_coinsTab->toggle(false);
+      } else if (type == 4 && m_coinsTab && !m_coinsTab->isToggled()) {
+            m_starsTab->toggle(false);
+            m_planetsTab->toggle(false);
+            m_creatorTab->toggle(false);
+            m_coinsTab->toggle(true);
       }
 
       auto contentLayer = m_scrollLayer->m_contentLayer;
@@ -404,7 +428,8 @@ void RLLeaderboardLayer::populateLeaderboard(
 
             const bool isStar = m_starsTab->isToggled();
             const bool isPlanets = m_planetsTab && m_planetsTab->isToggled();
-            const char* iconName = isStar ? "RL_starMed.png"_spr : (isPlanets ? "RL_planetMed.png"_spr : "RL_blueprintPoint01.png"_spr);
+            const bool isCoins = m_coinsTab && m_coinsTab->isToggled();
+            const char* iconName = isStar ? "RL_starMed.png"_spr : (isPlanets ? "RL_planetMed.png"_spr : (isCoins ? "RL_BlueCoinSmall.png"_spr : "RL_blueprintPoint01.png"_spr));
             auto iconSprite = CCSprite::create(iconName);
             iconSprite->setScale(0.65f);
             iconSprite->setPosition({325.f, 20.f});

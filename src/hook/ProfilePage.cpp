@@ -52,6 +52,7 @@ class $modify(RLProfilePage, ProfilePage) {
             int m_points = 0;
             int m_planets = 0;
             int m_stars = 0;
+            int m_coins = 0;
 
             utils::web::WebTask profileTask;
             ~Fields() {
@@ -181,6 +182,7 @@ class $modify(RLProfilePage, ProfilePage) {
 
             auto starsText = GameToolbox::pointsToString(m_fields->m_stars);
             auto planetsText = GameToolbox::pointsToString(m_fields->m_planets);
+            auto coinsText = GameToolbox::pointsToString(m_fields->m_coins);
 
             auto starsEntry = createStatEntry(
                 "rl-stars-entry",
@@ -196,8 +198,16 @@ class $modify(RLProfilePage, ProfilePage) {
                 "RL_planetMed.png"_spr,
                 menu_selector(RLProfilePage::onPlanetsClicked));
 
+            auto coinsEntry = createStatEntry(
+                "rl-coins-entry",
+                "rl-coins-label",
+                coinsText,
+                "RL_BlueCoinSmall.png"_spr,
+                nullptr);
+
             rlStatsMenu->addChild(starsEntry);
             rlStatsMenu->addChild(planetsEntry);
+            rlStatsMenu->addChild(coinsEntry);
 
             rlStatsMenu->setVisible(false);
             statsMenu->setVisible(true);
@@ -289,18 +299,20 @@ class $modify(RLProfilePage, ProfilePage) {
             auto json = jsonRes.unwrap();
             int points = json["points"].asInt().unwrapOrDefault();
             int stars = json["stars"].asInt().unwrapOrDefault();
+            int coins = json["coins"].asInt().unwrapOrDefault();
             int role = json["role"].asInt().unwrapOrDefault();
             int planets = json["planets"].asInt().unwrapOrDefault();
             bool isSupporter = json["isSupporter"].asBool().unwrapOrDefault();
 
             pageRef->m_fields->m_stars = stars;
+            pageRef->m_fields->m_coins = coins;
             pageRef->m_fields->m_planets = planets;
             pageRef->m_fields->m_points = points;
 
             pageRef->m_fields->role = role;
             pageRef->m_fields->isSupporter = isSupporter;
 
-            log::info("Profile data - points: {}, stars: {}, planets: {}, supporter: {}", points, stars, planets, isSupporter);
+            log::info("Profile data - points: {}, stars: {}, coins: {}, planets: {}, supporter: {}", points, stars, coins, planets, isSupporter);
 
             if (!pageRef->m_mainLayer) {
                   log::warn("ProfilePage destroyed before updating UI, skipping UI updates");
@@ -315,6 +327,7 @@ class $modify(RLProfilePage, ProfilePage) {
 
             pageRef->updateStatLabel("rl-stars-label", GameToolbox::pointsToString(pageRef->m_fields->m_stars));
             pageRef->updateStatLabel("rl-planets-label", GameToolbox::pointsToString(pageRef->m_fields->m_planets));
+            pageRef->updateStatLabel("rl-coins-label", GameToolbox::pointsToString(pageRef->m_fields->m_coins));
 
             auto pointsText = GameToolbox::pointsToString(pageRef->m_fields->m_points);
             auto rlStatsMenu = pageRef->getChildByIDRecursive("rl-stats-menu");

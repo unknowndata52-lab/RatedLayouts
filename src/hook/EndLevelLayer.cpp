@@ -65,7 +65,7 @@ class $modify(EndLevelLayer) {
             // capture EndLevelLayer as Ref
             Ref<EndLevelLayer> endLayerRef = this;
 
-            getTask.listen([endLayerRef, levelId](web::WebResponse* response) {
+            getTask.listen([endLayerRef, levelId, level](web::WebResponse* response) {
                   log::info("Received rating response for completed level ID: {}",
                             levelId);
 
@@ -158,6 +158,25 @@ class $modify(EndLevelLayer) {
 
                   log::debug("Submitting completion with attempts: {} time: {} jumps: {} clicks: {}", attempts, attemptTime, jumps, clicks);
 
+                  // Build comma-separated coins list based on pending user coins
+                  std::string coinsStr;
+                  if (level) {
+                        std::vector<int> coins;
+                        for (int i = 1; i <= 3; ++i) {
+                              auto coinKey = level->getCoinKey(i);
+                              if (GameStatsManager::sharedState()->hasPendingUserCoin(coinKey)) {
+                                    coins.push_back(i);
+                              }
+                        }
+                        for (size_t idx = 0; idx < coins.size(); ++idx) {
+                              if (idx) coinsStr += ",";
+                              coinsStr += std::to_string(coins[idx]);
+                        }
+                  } else {
+                        log::warn("Unable to build coins list: level pointer is null for levelId {}", levelId);
+                  }
+                  log::debug("Collected pending coins for level {}: {}", levelId, coinsStr);
+
                   matjson::Value jsonBody;
                   jsonBody["accountId"] = accountId;
                   jsonBody["argonToken"] = argonToken;
@@ -167,6 +186,9 @@ class $modify(EndLevelLayer) {
                   jsonBody["isPlat"] = isPlat;
                   jsonBody["jumps"] = jumps;
                   jsonBody["clicks"] = clicks;
+                  if (!coinsStr.empty()) {
+                        jsonBody["coins"] = coinsStr;
+                  }
 
                   auto submitReq = web::WebRequest();
                   submitReq.bodyJSON(jsonBody);
@@ -203,6 +225,10 @@ class $modify(EndLevelLayer) {
                                   success, responseStars);
 
                         if (success) {
+                              if (responseStars == 0 && responsePlanets == 0) {
+                                    log::warn("No stars or planets rewarded, possibly already rewarded before");
+                                    return;
+                              }
                               int displayStars = isPlat ? (responsePlanets - starReward) : (responseStars - starReward);
                               if (isPlat) {
                                     log::info("Display planets: {} - {} = {}", responsePlanets, starReward, displayStars);
