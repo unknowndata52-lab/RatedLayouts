@@ -1183,9 +1183,9 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
                   auto epicFeaturedCoin = difficultySpriteNode->getChildByID("epic-featured-coin");
                   if (epicFeaturedCoin) epicFeaturedCoin->removeFromParent();
 
-                  // reset difficulty frame to NA and revert any applied offsets
+                  // reset difficulty frame and revert any applied offsets
                   auto sprite = static_cast<GJDifficultySprite*>(difficultySpriteNode);
-                  sprite->updateDifficultyFrame(0, GJDifficultyName::Long);
+                  // sprite->updateDifficultyFrame(0, GJDifficultyName::Long); // this breaks on non-rated layouts
 
                   if (this->m_fields->m_originalYSaved) {
                         log::debug("restoring original Y (originalYSaved={}, originalY={})", this->m_fields->m_originalYSaved, this->m_fields->m_originalDifficultySpriteY);
@@ -1325,8 +1325,7 @@ class $modify(RLLevelInfoLayer, LevelInfoLayer) {
 
       // delete cache and refresh when level is updated
       void onUpdate(CCObject* sender) {
-            if (this->m_level && this->m_level->m_levelID != 0 &&
-                shouldDownloadLevel()) {
+            if (this->m_level && this->m_level->m_levelID != 0 && shouldDownloadLevel()) {
                   log::debug("Level updated, clearing cache for level ID: {}",
                              this->m_level->m_levelID);
                   deleteLevelFromCache(this->m_level->m_levelID);
