@@ -68,7 +68,7 @@ class $modify(RLProfilePage, ProfilePage) {
             }
       };
 
-      CCMenu* createStatEntry(
+      CCLayer* createStatEntry(
           char const* entryID,
           char const* labelID,
           std::string const& text,
@@ -84,13 +84,9 @@ class $modify(RLProfilePage, ProfilePage) {
             label->setScale(kLabelScale);
             label->limitLabelWidth(kMaxLabelW, kLabelScale, kMinScale);
 
-            CCSprite* iconSprite = nullptr;
-            iconSprite = CCSprite::create(iconFrameOrPath);
-
-            auto iconBtn = CCMenuItemSpriteExtra::create(
-                iconSprite,
-                this,
-                iconCallback);
+            CCSprite* iconSprite = CCSprite::create(iconFrameOrPath);
+            auto iconBtn = CCMenuItemSpriteExtra::create(iconSprite, this, iconCallback);
+            iconBtn->setID(fmt::format("{}-icon-btn", entryID).c_str());
 
             auto ls = label->getScaledContentSize();
             auto is = iconBtn->getScaledContentSize();
@@ -101,19 +97,22 @@ class $modify(RLProfilePage, ProfilePage) {
             float h = std::max(ls.height, is.height);
             float w = pad + ls.width + gap + is.width + pad;
 
-            auto entry = CCMenu::create();
+            auto entry = CCLayer::create();
             entry->setID(entryID);
             entry->setContentSize({w, h});
             entry->setAnchorPoint({0.f, 0.5f});
 
             label->setAnchorPoint({0.f, 0.5f});
             label->setPosition({pad, h / 2.f});
+            entry->addChild(label);
 
+            auto iconMenu = CCMenu::create();
+            iconMenu->setPosition({0.f, 0.f});
+            iconMenu->setID(fmt::format("{}-icon-menu", entryID).c_str());
             iconBtn->setAnchorPoint({0.f, 0.5f});
             iconBtn->setPosition({pad + ls.width + gap, h / 2.f});
-
-            entry->addChild(label);
-            entry->addChild(iconBtn);
+            iconMenu->addChild(iconBtn);
+            entry->addChild(iconMenu);
 
             return entry;
       }
@@ -131,6 +130,31 @@ class $modify(RLProfilePage, ProfilePage) {
             constexpr float kMaxLabelW = 58.f;
             constexpr float kMinScale = 0.20f;
             label->limitLabelWidth(kMaxLabelW, kLabelScale, kMinScale);
+
+            auto entry = typeinfo_cast<CCLayer*>(label->getParent());
+            if (!entry) return;
+
+            auto iconBtn = typeinfo_cast<CCMenuItemSpriteExtra*>(entry->getChildByIDRecursive(
+                fmt::format("{}-icon-btn", entry->getID()).c_str()));
+
+            auto ls = label->getScaledContentSize();
+            float isw = 0.f, ish = 0.f;
+            if (iconBtn) {
+                  auto is = iconBtn->getScaledContentSize();
+                  isw = is.width;
+                  ish = is.height;
+            }
+
+            constexpr float gap = 2.f;
+            constexpr float pad = 2.f;
+
+            float h = std::max(ls.height, ish);
+            float w = pad + ls.width + gap + isw + pad;
+
+            entry->setContentSize({w, h});
+
+            label->setPosition({pad, h / 2.f});
+            if (iconBtn) iconBtn->setPosition({pad + ls.width + gap, h / 2.f});
       }
 
       bool init(int accountID, bool ownProfile) {
@@ -223,7 +247,7 @@ class $modify(RLProfilePage, ProfilePage) {
             m_mainLayer->addChild(rlStatsMenu);
 
             if (score) {
-                  coro::spawn << fetchProfileDataTask(score->m_accountID);
+                  fetchProfileData(score->m_accountID);
             }
 
             rlStatsMenu->updateLayout();
@@ -356,14 +380,14 @@ class $modify(RLProfilePage, ProfilePage) {
 
             if (rlStatsMenu) {
                   for (auto entryID : {"rl-stars-entry", "rl-planets-entry", "rl-coins-entry", "rl-points-entry"}) {
-                        auto entry = typeinfo_cast<CCMenu*>(rlStatsMenu->getChildByIDRecursive(entryID));
+                        auto entry = typeinfo_cast<CCLayer*>(rlStatsMenu->getChildByIDRecursive(entryID));
                         if (!entry) continue;
 
                         auto label = typeinfo_cast<CCLabelBMFont*>(entry->getChildByIDRecursive(
                             std::string(entryID) == "rl-stars-entry" ? "rl-stars-label" : std::string(entryID) == "rl-planets-entry" ? "rl-planets-label"
                                                                                       : std::string(entryID) == "rl-coins-entry"     ? "rl-coins-label"
                                                                                                                                      : "rl-points-label"));
-                        auto iconBtn = typeinfo_cast<CCMenuItemSpriteExtra*>(entry->getChildren()->objectAtIndex(1));
+                        auto iconBtn = typeinfo_cast<CCMenuItemSpriteExtra*>(entry->getChildByIDRecursive(fmt::format("{}-icon-btn", entryID).c_str()));
 
                         if (!label || !iconBtn) continue;
 

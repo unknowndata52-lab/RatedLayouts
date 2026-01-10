@@ -109,6 +109,11 @@ class $modify(RLCommentCell, CommentCell) {
                   return;
             }
 
+            if (m_accountComment) {
+                  log::warn("skipped account comment");
+                  return;
+            }
+
             // check cache first and populate immediately
             auto cachedProfile = getCachedUserProfile(comment->m_accountID);
             if (cachedProfile) {
