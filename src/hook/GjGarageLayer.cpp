@@ -10,10 +10,13 @@ class $modify(GJGarageLayer) {
       struct Fields {
             CCNode* myStatItem = nullptr;
             CCNode* statMenu = nullptr;
+
             CCNode* starsValue = nullptr;
             CCNode* planetsValue = nullptr;
+            CCNode* coinsValue = nullptr;
             int storedStars = 0;
             int storedPlanets = 0;
+            int storedCoins = 0;
             utils::web::WebTask profileTask;
             ~Fields() {
                   profileTask.cancel();
@@ -86,6 +89,7 @@ class $modify(GJGarageLayer) {
                   int points = json["points"].asInt().unwrapOrDefault();
                   int planets = json["planets"].asInt().unwrapOrDefault();
                   int stars = json["stars"].asInt().unwrapOrDefault();
+                  int coins = json["coins"].asInt().unwrapOrDefault();
 
                   log::info("Profile data - points: {}, stars: {}", points, stars);
                   m_fields->storedStars = stars;
@@ -102,6 +106,10 @@ class $modify(GJGarageLayer) {
                               m_fields->planetsValue->removeFromParent();
                               m_fields->planetsValue = nullptr;
                         }
+                        if (m_fields->coinsValue) {
+                              m_fields->coinsValue->removeFromParent();
+                              m_fields->coinsValue = nullptr;
+                        }
 
                         auto starSprite = CCSprite::create("RL_starMed.png"_spr);
                         auto starsValue = StatsDisplayAPI::getNewItem(
@@ -117,6 +125,14 @@ class $modify(GJGarageLayer) {
                             planets, 0.54f);
                         m_fields->planetsValue = planetsValue;
                         m_fields->statMenu->addChild(planetsValue);
+
+                        auto coinsSprite = CCSprite::create("RL_BlueCoinSmall.png"_spr);
+                        auto coinsValue = StatsDisplayAPI::getNewItem(
+                            "coins-collected"_spr, coinsSprite,
+                            coins, 0.54f);
+                        m_fields->coinsValue = coinsValue;
+                        m_fields->statMenu->addChild(coinsValue);
+
                         // call updateLayout if available
                         if (auto menu = typeinfo_cast<CCMenu*>(m_fields->statMenu)) {
                               menu->updateLayout();

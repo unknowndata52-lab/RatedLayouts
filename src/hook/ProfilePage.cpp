@@ -355,12 +355,13 @@ class $modify(RLProfilePage, ProfilePage) {
             }
 
             if (rlStatsMenu) {
-                  for (auto entryID : {"rl-stars-entry", "rl-planets-entry", "rl-points-entry"}) {
+                  for (auto entryID : {"rl-stars-entry", "rl-planets-entry", "rl-coins-entry", "rl-points-entry"}) {
                         auto entry = typeinfo_cast<CCMenu*>(rlStatsMenu->getChildByIDRecursive(entryID));
                         if (!entry) continue;
 
                         auto label = typeinfo_cast<CCLabelBMFont*>(entry->getChildByIDRecursive(
                             std::string(entryID) == "rl-stars-entry" ? "rl-stars-label" : std::string(entryID) == "rl-planets-entry" ? "rl-planets-label"
+                                                                                      : std::string(entryID) == "rl-coins-entry"     ? "rl-coins-label"
                                                                                                                                      : "rl-points-label"));
                         auto iconBtn = typeinfo_cast<CCMenuItemSpriteExtra*>(entry->getChildren()->objectAtIndex(1));
 
@@ -485,6 +486,7 @@ class $modify(RLProfilePage, ProfilePage) {
                   int points = json["points"].asInt().unwrapOrDefault();
                   int stars = json["stars"].asInt().unwrapOrDefault();
                   int role = json["role"].asInt().unwrapOrDefault();
+                  int coins = json["coins"].asInt().unwrapOrDefault();
                   int planets = json["planets"].asInt().unwrapOrDefault();
                   bool isSupporter = json["isSupporter"].asBool().unwrapOrDefault();
 
@@ -502,6 +504,7 @@ class $modify(RLProfilePage, ProfilePage) {
                   page->m_fields->m_stars = stars;
                   page->m_fields->m_planets = planets;
                   page->m_fields->m_points = points;
+                  page->m_fields->m_coins = coins;
 
                   page->m_fields->role = role;
                   page->m_fields->isSupporter = isSupporter;
@@ -512,6 +515,7 @@ class $modify(RLProfilePage, ProfilePage) {
 
                   page->updateStatLabel("rl-stars-label", GameToolbox::pointsToString(page->m_fields->m_stars));
                   page->updateStatLabel("rl-planets-label", GameToolbox::pointsToString(page->m_fields->m_planets));
+                  page->updateStatLabel("rl-coins-label", GameToolbox::pointsToString(page->m_fields->m_coins));
 
                   if (auto rlStatsMenu = page->getChildByIDRecursive("rl-stats-menu")) {
                         rlStatsMenu->updateLayout();
