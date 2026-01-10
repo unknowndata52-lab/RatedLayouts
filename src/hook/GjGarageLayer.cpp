@@ -117,6 +117,7 @@ class $modify(GJGarageLayer) {
                             m_fields->storedStars, 0.54f);
 
                         m_fields->starsValue = starsValue;
+                        starsValue->setID("rl-stars-value");
                         m_fields->statMenu->addChild(starsValue);
 
                         auto planetSprite = CCSprite::create("RL_planetMed.png"_spr);
@@ -124,6 +125,7 @@ class $modify(GJGarageLayer) {
                             "planets-collected"_spr, planetSprite,
                             planets, 0.54f);
                         m_fields->planetsValue = planetsValue;
+                        planetsValue->setID("rl-planets-value");
                         m_fields->statMenu->addChild(planetsValue);
 
                         auto coinsSprite = CCSprite::create("RL_BlueCoinSmall.png"_spr);
@@ -131,6 +133,7 @@ class $modify(GJGarageLayer) {
                             "coins-collected"_spr, coinsSprite,
                             coins, 0.54f);
                         m_fields->coinsValue = coinsValue;
+                        coinsValue->setID("rl-coins-value");
                         m_fields->statMenu->addChild(coinsValue);
 
                         // call updateLayout if available
