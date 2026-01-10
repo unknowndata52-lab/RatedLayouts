@@ -1,18 +1,21 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/CCSprite.hpp>
+#include <Geode/modify/EffectGameObject.hpp>
 #include <Geode/modify/GameObject.hpp>
-#include <Geode/modify/PlayLayer.hpp>
 
 using namespace geode::prelude;
 
 const int USER_COIN = 1329;
 
 // Replace coin visuals when GameObjects are set up
-class $modify(GameObject) {
-      struct Fields { utils::web::WebTask m_fetchTask; ~Fields() { m_fetchTask.cancel(); } };
+class $modify(EffectGameObject) {
+      struct Fields {
+            utils::web::WebTask m_fetchTask;
+            ~Fields() { m_fetchTask.cancel(); }
+      };
 
       void customSetup() {
-            GameObject::customSetup();
+            EffectGameObject::customSetup();
 
             if (this->m_objectID != USER_COIN) return;
 
