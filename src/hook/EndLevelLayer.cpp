@@ -262,14 +262,6 @@ class $modify(EndLevelLayer) {
                               bigStarSprite->setID(isPlat ? "rl-planet-reward-sprite" : "rl-star-reward-sprite");
                               endLayerRef->m_mainLayer->addChild(bigStarSprite);
 
-                              // star animation lol
-                              auto scaleAction = CCScaleBy::create(.6f, .6f);
-                              auto bounceAction = CCEaseBounceOut::create(scaleAction);
-                              auto fadeAction = CCFadeIn::create(0.5f);
-                              auto spawnAction =
-                                  CCSpawn::createWithTwoActions(bounceAction, fadeAction);
-                              bigStarSprite->runAction(spawnAction);
-
                               // put the difficulty value next to the big star
                               // making this look like an actual star reward in game
                               auto difficultyLabel = CCLabelBMFont::create(
@@ -278,7 +270,20 @@ class $modify(EndLevelLayer) {
                                   {-5, bigStarSprite->getContentSize().height / 2});
                               difficultyLabel->setAnchorPoint({1.0f, 0.5f});
                               difficultyLabel->setID(isPlat ? "rl-planet-reward-label" : "rl-star-reward-label");
+                              // start the label invisible so it can fade in with the star
+                              difficultyLabel->setOpacity(0);
                               bigStarSprite->addChild(difficultyLabel);
+
+                              // star animation lol
+                              auto scaleAction = CCScaleBy::create(.6f, .6f);
+                              auto bounceAction = CCEaseBounceOut::create(scaleAction);
+                              auto fadeAction = CCFadeIn::create(0.4f);
+                              auto spawnAction =
+                                  CCSpawn::createWithTwoActions(bounceAction, fadeAction);
+                              bigStarSprite->runAction(spawnAction);
+
+                              // make the difficulty label fade in along with the star
+                              difficultyLabel->runAction(CCFadeIn::create(fadeAction->getDuration()));
 
                               // never used this before but its fancy
                               // some devices crashes from this, idk why soggify
