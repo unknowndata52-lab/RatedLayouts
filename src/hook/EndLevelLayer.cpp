@@ -259,6 +259,7 @@ class $modify(EndLevelLayer) {
                                        2});
                               bigStarSprite->setOpacity(0);
                               bigStarSprite->setScale(1.2f);
+                              bigStarSprite->setID(isPlat ? "rl-planet-reward-sprite" : "rl-star-reward-sprite");
                               endLayerRef->m_mainLayer->addChild(bigStarSprite);
 
                               // star animation lol
@@ -276,6 +277,7 @@ class $modify(EndLevelLayer) {
                               difficultyLabel->setPosition(
                                   {-5, bigStarSprite->getContentSize().height / 2});
                               difficultyLabel->setAnchorPoint({1.0f, 0.5f});
+                              difficultyLabel->setID(isPlat ? "rl-planet-reward-label" : "rl-star-reward-label");
                               bigStarSprite->addChild(difficultyLabel);
 
                               // never used this before but its fancy

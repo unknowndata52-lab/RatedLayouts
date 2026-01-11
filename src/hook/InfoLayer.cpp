@@ -50,6 +50,7 @@ class $modify(RLLInfoLayer, InfoLayer) {
                               auto reportButton = CCMenuItemSpriteExtra::create(
                                   reportButtonSpr, layerRef, menu_selector(RLLInfoLayer::onReportButton));
 
+                              reportButton->setID("rated-layouts-report-button"_spr);
                               auto vanillaReportButton = layerRef->getChildByIDRecursive("report-button");
                               auto mainMenu = layerRef->getChildByIDRecursive("main-menu");
                               if (vanillaReportButton) {

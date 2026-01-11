@@ -15,6 +15,7 @@ class $modify(RLHookGauntletSelectLayer, GauntletSelectLayer) {
                   auto gauntletBtnSpr = AccountButtonSprite::create(gauntletSpr, AccountBaseColor::Blue, AccountBaseSize::Normal);
                   auto gauntletBtn = CCMenuItemSpriteExtra::create(
                       gauntletBtnSpr, this, menu_selector(RLHookGauntletSelectLayer::onGauntletButtonClick));
+                  gauntletBtn->setID("rated-layouts-gauntlets-button"_spr);
                   topRight->addChild(gauntletBtn);
                   topRight->updateLayout();
             }

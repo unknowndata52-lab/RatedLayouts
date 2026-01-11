@@ -17,6 +17,7 @@ class $modify(RLHCreatorLayer, CreatorLayer) {
             lbButtonSpr->setScale(1.2f);
             auto lbButton = CCMenuItemSpriteExtra::create(
                 lbButtonSpr, this, menu_selector(RLHCreatorLayer::onRatedLayoutLayer));
+            lbButton->setID("rated-layouts-button"_spr);
             bottomLeftMenu->addChild(lbButton);
             bottomLeftMenu->updateLayout();
             return true;
