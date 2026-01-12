@@ -50,46 +50,43 @@ class $modify(EffectGameObject) {
 
                   auto json = jsonRes.unwrap();
                   bool isSuggested = json["isSuggested"].asBool().unwrapOrDefault();
+                  auto tag = isSuggested ? 69 : 67;  // idk what to name the tags lol
 
-                  if (isSuggested) {
-                        if (!selfRef->getChildByID("rl-suggested")) {
-                              auto marker = CCNode::create();
-                              marker->setID("rl-suggested");
-                              selfRef->addChild(marker);
+                  if (auto asSprite = typeinfo_cast<CCSprite*>(selfRef.operator->())) {
+                        asSprite->setTag(tag);
+                        if (!isSuggested) asSprite->setColor({0, 127, 232});
+                  }
+                  if (auto children = selfRef->getChildren()) {
+                        for (auto node : CCArrayExt<CCNode>(children)) {
+                              if (auto cs = typeinfo_cast<CCSprite*>(node)) {
+                                    cs->setTag(tag);
+                                    if (!isSuggested) cs->setColor({0, 127, 232});
+                              }
                         }
-
-                        log::debug("skipping replacement for level {}", levelId);
-                        return;
                   }
 
-                  if (auto marker = selfRef->getChildByID("rl-suggested")) {
-                        marker->removeFromParent();
-                  }
-
-                  // TODO: change the coin gameobject sprite to blue coin with animation pls
+                  // btw this is only just makes the coin blue but still uses the default coin sprite.
+                  // i still dont know how to replace the actual sprite image lmao
 
                   selfRef->m_addToNodeContainer = true;
             });
       }
 };
 
-// detect and remove the bronze tint on unverified coins
 class $modify(CCSprite) {
-      void setColor(ccColor3B const& col) {
-            if (col == BRONZE_COLOR) {
-                  GameObject* gameObj = typeinfo_cast<GameObject*>(this);  // check for user coin
-                  if (gameObj && gameObj->m_objectID == USER_COIN) {
-                        auto eff = typeinfo_cast<EffectGameObject*>(gameObj);
-                        if (eff && eff->getChildByID("rl-suggested")) {
-                              CCSprite::setColor(col);
-                              return;
-                        }
-
+      void setColor(const ccColor3B& color) {
+            if (color == BRONZE_COLOR) {
+                  int tag = this->getTag();
+                  if (tag == 67) {
                         CCSprite::setColor({0, 127, 232});
+                        return;
+                  }
+                  if (tag == 69) {
+                        CCSprite::setColor(color);
                         return;
                   }
             }
 
-            CCSprite::setColor(col);
+            CCSprite::setColor(color);
       }
 };
