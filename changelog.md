@@ -1,6 +1,7 @@
 # v0.3.6-beta.1
 
 - **Added Blue Coins!** Thanks to [Darkore](user:3595559) for the Blue Coin texture design! You can now collect Blue Coins by collecting them in the Rated Layouts levels.
+- **NEW Featured and Epic Texture** Replaced the old texture to a new and clearer design. *Thanks to myself for the new design!!!!!*
 
 _(Be sure to re-enter your previously beaten levels to collect Blue Coins if you have played Rated Layouts before this update!)_
 
