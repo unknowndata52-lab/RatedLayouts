@@ -1,7 +1,56 @@
+#include <BadgesAPI.hpp>
 #include <Geode/Geode.hpp>
 #include <Geode/modify/CommentCell.hpp>
 
 using namespace geode::prelude;
+
+static std::unordered_map<int, std::vector<Badge>> g_pendingBadges;
+
+$execute {
+      BadgesAPI::registerBadge(
+          "rl-mod-badge",
+          "Rated Layouts Moderator",
+          "This user can <cj>suggest layout levels</c> for <cl>Rated "
+          "Layouts</c> to the <cr>Layout Admins</c>. They have the ability to <co>moderate the leaderboard</c>.",
+          [] {
+                return CCSprite::create("RL_badgeMod01.png"_spr);
+          },
+          [](const Badge& badge, const UserInfo& user) {
+                g_pendingBadges[user.accountID].push_back(badge);
+          });
+      BadgesAPI::registerBadge(
+          "rl-admin-badge",
+          "Rated Layouts Admin",
+          "This user can <cj>rate layout levels</c> for <cl>Rated "
+          "Layouts</c>. They have the same power as <cg>Moderators</c> but including the ability to change the <cy>featured ranking on the "
+          "featured layout levels</c> and <cg>set event layouts</c>.",
+          [] {
+                return CCSprite::create("RL_badgeAdmin01.png"_spr);
+          },
+          [](const Badge& badge, const UserInfo& user) {
+                g_pendingBadges[user.accountID].push_back(badge);
+          });
+      BadgesAPI::registerBadge(
+          "rl-owner-badge",
+          "Rated Layouts Owner",
+          "<cf>ArcticWoof</c> is the <ca>Owner and Developer</c> of <cl>Rated Layouts</c> Geode Mod.\nHe controls and manages everything within <cl>Rated Layouts</c>, including updates and adding new features as well as the ability to <cg>promote users to Layout Moderators or Administrators</c>.",
+          [] {
+                return CCSprite::create("RL_badgeOwner.png"_spr);
+          },
+          [](const Badge& badge, const UserInfo& user) {
+                g_pendingBadges[user.accountID].push_back(badge);
+          });
+      BadgesAPI::registerBadge(
+          "rl-supporter-badge",
+          "Rated Layouts Supporter",
+          "This user is a <cp>Layout Supporter</c>! They have supported the development of <cl>Rated Layouts</c> through membership donations.\n\nYou can become a <cp>Layout Supporter</c> by donating via <cp>Ko-Fi</c>",
+          [] {
+                return CCSprite::create("RL_badgeSupporter.png"_spr);
+          },
+          [](const Badge& badge, const UserInfo& user) {
+                g_pendingBadges[user.accountID].push_back(badge);
+          });
+}
 
 // helper functions for caching user roles cuz caching is good.
 static std::string getUserRoleCachePath() {
@@ -16,39 +65,52 @@ struct CachedUserProfile {
       bool supporter = false;
 };
 
+static bool g_rlSupporter = false;
+static int g_rlRole = 0;
+static int g_accountID = 0;
+
 static std::optional<CachedUserProfile> getCachedUserProfile(int accountId) {
       auto cachePath = getUserRoleCachePath();
       auto data = utils::file::readString(cachePath);
-      if (!data) return std::nullopt;
+      if (!data)
+            return std::nullopt;
 
       auto json = matjson::parse(data.unwrap());
-      if (!json) return std::nullopt;
+      if (!json)
+            return std::nullopt;
 
       auto root = json.unwrap();
-      if (!root.isObject() || !root.contains(fmt::format("{}", accountId))) return std::nullopt;
+      if (!root.isObject() || !root.contains(fmt::format("{}", accountId)))
+            return std::nullopt;
       auto entry = root[fmt::format("{}", accountId)];
-      if (!entry.isObject()) return std::nullopt;  // require cached entry to be an object
+      if (!entry.isObject())
+            return std::nullopt;  // require cached entry to be an object
       CachedUserProfile p;
       p.role = entry["role"].asInt().unwrapOrDefault();
       p.stars = entry["stars"].asInt().unwrapOrDefault();
       p.planets = entry["planets"].asInt().unwrapOrDefault();
       p.supporter = entry["isSupporter"].asBool().unwrapOrDefault();
       // missing oh no
-      if (p.role == 0 && p.stars == 0 && p.planets == 0 && !p.supporter) return std::nullopt;
+      if (p.role == 0 && p.stars == 0 && p.planets == 0 && !p.supporter)
+            return std::nullopt;
       return p;
 }
 
 static void removeCachedUserProfile(int accountId) {
       auto cachePath = getUserRoleCachePath();
       auto existingData = utils::file::readString(cachePath);
-      if (!existingData) return;
+      if (!existingData)
+            return;
 
       auto parsed = matjson::parse(existingData.unwrap());
-      if (!parsed) return;
+      if (!parsed)
+            return;
       auto root = parsed.unwrap();
-      if (!root.isObject()) return;
+      if (!root.isObject())
+            return;
       auto key = fmt::format("{}", accountId);
-      if (!root.contains(key)) return;
+      if (!root.contains(key))
+            return;
       root.erase(key);
       auto jsonString = root.dump();
       auto writeResult = utils::file::writeString(geode::utils::string::pathToString(cachePath), jsonString);
@@ -76,7 +138,8 @@ static void cacheUserProfile(int accountId, int role, int stars, int planets, bo
       auto existingData = utils::file::readString(cachePath);
       if (existingData) {
             auto parsed = matjson::parse(existingData.unwrap());
-            if (parsed) root = parsed.unwrap();
+            if (parsed)
+                  root = parsed.unwrap();
       }
 
       matjson::Value obj = matjson::Value::object();
@@ -122,9 +185,9 @@ class $modify(RLCommentCell, CommentCell) {
                   m_fields->planets = cachedProfile->planets;
                   m_fields->supporter = cachedProfile->supporter;
                   log::debug("Loaded cached role {} stars {} planets {} for user {}", m_fields->role, m_fields->stars, m_fields->planets, comment->m_accountID);
-                  loadBadgeForComment(comment->m_accountID);
                   applyCommentTextColor(comment->m_accountID);
                   applyStarGlow(comment->m_accountID, m_fields->stars, m_fields->planets);
+                  auto it = g_pendingBadges.find(comment->m_accountID);
 
                   // If compatibility mode is disabled, always attempt to refresh the cache from the server
                   if (!Mod::get()->getSettingValue<bool>("compatibilityMode")) {
@@ -236,21 +299,26 @@ class $modify(RLCommentCell, CommentCell) {
                         if (response->code() == 404) {
                               log::debug("Profile not found on server, removing cached entry for {}", accountId);
                               removeCachedUserProfile(accountId);
-                              if (!cellRef) return;
+                              if (!cellRef)
+                                    return;
                               cellRef->m_fields->role = 0;
                               cellRef->m_fields->stars = 0;
 
                               // remove any role badges if present (very unlikely scenario lol)
                               if (cellRef->m_mainLayer) {
                                     if (auto userNameMenu = typeinfo_cast<CCMenu*>(cellRef->m_mainLayer->getChildByIDRecursive("username-menu"))) {
-                                          if (auto owner = userNameMenu->getChildByID("rl-comment-owner-badge")) owner->removeFromParent();
-                                          if (auto mod = userNameMenu->getChildByID("rl-comment-mod-badge")) mod->removeFromParent();
-                                          if (auto admin = userNameMenu->getChildByID("rl-comment-admin-badge")) admin->removeFromParent();
+                                          if (auto owner = userNameMenu->getChildByID("rl-comment-owner-badge"))
+                                                owner->removeFromParent();
+                                          if (auto mod = userNameMenu->getChildByID("rl-comment-mod-badge"))
+                                                mod->removeFromParent();
+                                          if (auto admin = userNameMenu->getChildByID("rl-comment-admin-badge"))
+                                                admin->removeFromParent();
                                           userNameMenu->updateLayout();
                                     }
                                     // remove any glow
                                     auto glowId = fmt::format("rl-comment-glow-{}", accountId);
-                                    if (auto glow = cellRef->m_mainLayer->getChildByIDRecursive(glowId)) glow->removeFromParent();
+                                    if (auto glow = cellRef->m_mainLayer->getChildByIDRecursive(glowId))
+                                          glow->removeFromParent();
                               }
                         }
                         return;
@@ -272,20 +340,25 @@ class $modify(RLCommentCell, CommentCell) {
                   if (role == 0 && stars == 0 && planets == 0) {
                         log::debug("User {} has no role/stars/planets - removing from cache", accountId);
                         removeCachedUserProfile(accountId);
-                        if (!cellRef) return;
+                        if (!cellRef)
+                              return;
                         cellRef->m_fields->role = 0;
                         cellRef->m_fields->stars = 0;
                         // remove any role badges and glow only if UI exists
                         if (cellRef->m_mainLayer) {
                               if (auto userNameMenu = typeinfo_cast<CCMenu*>(cellRef->m_mainLayer->getChildByIDRecursive("username-menu"))) {
-                                    if (auto owner = userNameMenu->getChildByID("rl-comment-owner-badge")) owner->removeFromParent();
-                                    if (auto mod = userNameMenu->getChildByID("rl-comment-mod-badge")) mod->removeFromParent();
-                                    if (auto admin = userNameMenu->getChildByID("rl-comment-admin-badge")) admin->removeFromParent();
+                                    if (auto owner = userNameMenu->getChildByID("rl-comment-owner-badge"))
+                                          owner->removeFromParent();
+                                    if (auto mod = userNameMenu->getChildByID("rl-comment-mod-badge"))
+                                          mod->removeFromParent();
+                                    if (auto admin = userNameMenu->getChildByID("rl-comment-admin-badge"))
+                                          admin->removeFromParent();
                                     userNameMenu->updateLayout();
                               }
                               // remove any glow
                               auto glowId = fmt::format("rl-comment-glow-{}", accountId);
-                              if (auto glow = cellRef->m_mainLayer->getChildByIDRecursive(glowId)) glow->removeFromParent();
+                              if (auto glow = cellRef->m_mainLayer->getChildByIDRecursive(glowId))
+                                    glow->removeFromParent();
                         }
                         return;
                   }
@@ -298,13 +371,40 @@ class $modify(RLCommentCell, CommentCell) {
 
                   log::debug("User comment role: {} supporter={} stars={} planets={}", role, isSupporter, stars, planets);
 
-                  // Only update UI if it still exists
-                  if (cellRef->m_mainLayer) {
-                        cellRef->loadBadgeForComment(accountId);
-                        cellRef->applyCommentTextColor(accountId);
-                        cellRef->applyStarGlow(accountId, stars, planets);
+                  log::debug("User comment role: {} supporter={}", role, cellRef->m_fields->supporter);
+
+                  cellRef->applyCommentTextColor(accountId);
+                  cellRef->applyStarGlow(accountId, stars, planets);
+
+                  auto it = g_pendingBadges.find(accountId);
+                  if (it != g_pendingBadges.end()) {
+                        for (auto const& b : it->second) {
+                              if (!b.targetNode || !b.targetNode->getParent())
+                                    continue;
+
+                              if (b.badgeID == "rl-owner-badge") {
+                                    if (accountId == 7689052)
+                                          BadgesAPI::showBadge(b);
+                              } else if (b.badgeID == "rl-mod-badge") {
+                                    if (accountId != 7689052 && role == 1)
+                                          BadgesAPI::showBadge(b);
+                              } else if (b.badgeID == "rl-admin-badge") {
+                                    if (accountId != 7689052 && role == 2)
+                                          BadgesAPI::showBadge(b);
+                              } else if (b.badgeID == "rl-supporter-badge") {
+                                    if (cellRef->m_fields->supporter)
+                                          BadgesAPI::showBadge(b);
+                              }
+                        }
+                        g_pendingBadges.erase(it);
                   }
             });
+            // Only update UI if it still exists
+            if (cellRef->m_mainLayer) {
+                  cellRef->loadBadgeForComment(accountId);
+                  cellRef->applyCommentTextColor(accountId);
+                  cellRef->applyStarGlow(accountId, cellRef->m_fields->stars, cellRef->m_fields->planets);
+            }
       }
 
       void loadBadgeForComment(int accountId) {
@@ -399,16 +499,23 @@ class $modify(RLCommentCell, CommentCell) {
                       utils::web::openLinkInBrowser("https://ko-fi.com/arcticwoof");
                 });
       }
+
       void applyStarGlow(int accountId, int stars, int planets) {
-            if (stars <= 0 && planets <= 0) return;
-            if (!m_mainLayer) return;
+            if (stars <= 0 && planets <= 0)
+                  return;
+            if (!m_mainLayer)
+                  return;
             auto glowId = fmt::format("rl-comment-glow-{}", accountId);
             // don't create duplicate glow
-            if (m_mainLayer->getChildByIDRecursive(glowId)) return;
+            if (m_mainLayer->getChildByIDRecursive(glowId))
+                  return;
             auto glow = CCSprite::createWithSpriteFrameName("chest_glow_bg_001.png");
-            if (!glow) return;
-            if (m_accountComment) return;  // no glow for account comments
-            if (Mod::get()->getSettingValue<bool>("disableCommentGlow")) return;
+            if (!glow)
+                  return;
+            if (m_accountComment)
+                  return;  // no glow for account comments
+            if (Mod::get()->getSettingValue<bool>("disableCommentGlow"))
+                  return;
             if (m_compactMode) {
                   glow->setID(glowId.c_str());
                   glow->setAnchorPoint({0.195f, 0.5f});
