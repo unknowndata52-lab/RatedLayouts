@@ -9,7 +9,6 @@ class $modify(EffectGameObject) {
     struct Fields {
         utils::web::WebTask m_fetchTask;
         bool m_isSuggested = false;
-        // Clean up task when object is destroyed
         ~Fields() { m_fetchTask.cancel(); }
     };
 
@@ -18,7 +17,7 @@ class $modify(EffectGameObject) {
 
         if (this->m_objectID != USER_COIN) return;
         
-        // Prevent applying twice if customSetup runs multiple times
+        // Prevent applying twice
         if (this->getChildByID("rl-blue-coin-anim")) return;
 
         auto playLayer = PlayLayer::get();
@@ -31,68 +30,59 @@ class $modify(EffectGameObject) {
         
         Ref<EffectGameObject> selfRef = this;
         
-        // Start the web request
         m_fields->m_fetchTask = web::WebRequest().get(url);
         
-        // Listen for response
         m_fields->m_fetchTask.listen([selfRef, levelId](web::WebResponse* res) {
             if (!selfRef) return;
 
-            if (!res || !res->ok()) {
-                log::debug("GameObjectCoin: fetch failed for level {}", levelId);
+            // Optional: Check if request succeeded. 
+            // If you want the coin to be blue ONLY on rated levels, keep this check.
+            if (!res || !res->ok()) { 
+                // log::debug("Fetch failed for level {}", levelId);
                 return; 
             }
 
-            auto jsonRes = res->json();
-            if (!jsonRes) return;
+            // --- ANIMATION LOGIC ---
+            
+            auto spriteCache = CCSpriteFrameCache::get();
 
-            auto json = jsonRes.unwrap();
-            // We only really care if the server responds; we can check suggested/rated here
-            // to decide WHICH animation to play, but for now let's apply the Blue Coin.
-            
-            // --- ANIMATION LOGIC STARTS HERE ---
-            
-            // 1. Create the Animation Frame Array
-            auto spriteCache = CCSpriteFrameCache::sharedSpriteFrameCache();
+            // 1. CRITICAL: Load the spritesheet defined in mod.json
+            // Geode places resources in a folder named after your Mod ID.
+            // Your Mod ID is "arcticwoof.rated_layouts" and the sheet key is "RLCoins"
+            spriteCache->addSpriteFramesWithFile("arcticwoof.rated_layouts/RLCoins.plist");
+
+            // 2. Create the frames
             auto animFrames = CCArray::create();
 
-            // Loop through your 4 images. 
-            // IMPORTANT: Ensure these names match exactly what is in your .plist or file system
+            // We loop from 1 to 4 because your files are RL_BlueCoin1.png ... RL_BlueCoin4.png
             for (int i = 1; i <= 4; i++) {
+                // The frame name inside the plist usually matches the original filename
                 auto frameName = fmt::format("RL_BlueCoin{}.png", i);
                 auto frame = spriteCache->spriteFrameByName(frameName.c_str());
                 
                 if (frame) {
                     animFrames->addObject(frame);
                 } else {
-                    log::error("Could not find sprite frame: {}", frameName);
-                    // If you haven't loaded a .plist, you might need to try creating from file:
-                    // animFrames->addObject(CCSprite::create(frameName.c_str())->getDisplayFrame());
+                    // This log helps debug if the plist path is wrong or frames are named differently
+                    log::warn("Frame not found in RLCoins.plist: {}", frameName);
                 }
             }
 
-            // Only proceed if we found frames
             if (animFrames->count() > 0) {
-                auto animation = CCAnimation::createWithSpriteFrames(animFrames, 0.10f); // 0.10f is the speed per frame
+                // 0.10f = speed (10 frames per second). Lower = Faster.
+                auto animation = CCAnimation::createWithSpriteFrames(animFrames, 0.10f); 
                 auto animate = CCAnimate::create(animation);
                 auto loop = CCRepeatForever::create(animate);
 
-                // 2. Find the actual visual node to apply this to.
-                // EffectGameObject is a container. The visual coin is usually a child CCSprite.
-                
+                // 3. Find the sprite node to apply it to
                 CCSprite* targetSprite = nullptr;
 
-                // If the object acts as the sprite itself (sometimes true in GD)
                 if (auto asSprite = typeinfo_cast<CCSprite*>(selfRef.operator->())) {
                     targetSprite = asSprite;
                 }
-                // Otherwise look for children (Standard for User Coins)
                 else if (auto children = selfRef->getChildren()) {
                     for (auto node : CCArrayExt<CCNode>(children)) {
                         if (auto s = typeinfo_cast<CCSprite*>(node)) {
-                            // GD Coins sometimes have a "glow" sprite and a "main" sprite.
-                            // The main sprite usually has a specific Z order or texture.
-                            // We will simply apply it to the first valid Sprite we find that looks like the coin.
                             targetSprite = s;
                             break; 
                         }
@@ -100,18 +90,18 @@ class $modify(EffectGameObject) {
                 }
 
                 if (targetSprite) {
-                    // Mark this so we don't do it twice (using ID system)
                     selfRef->setID("rl-blue-coin-anim");
                     
-                    // Reset color to white so the blue texture shows correctly
-                    // (If the coin was bronze (tinted), it would turn the blue texture brown-ish)
+                    // IMPORTANT: Set color to White. 
+                    // The original coin is Bronze because GD tints it orange. 
+                    // To show your blue texture correctly, we must untint it (White).
                     targetSprite->setColor({255, 255, 255}); 
 
-                    // Set the initial texture to Frame 1 so it changes immediately
+                    // Set initial frame
                     auto firstFrame = static_cast<CCSpriteFrame*>(animFrames->objectAtIndex(0));
                     targetSprite->setDisplayFrame(firstFrame);
 
-                    // Run the loop
+                    // Run animation
                     targetSprite->runAction(loop);
                 }
             }
