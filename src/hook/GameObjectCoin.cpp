@@ -1,92 +1,122 @@
 #include <Geode/Geode.hpp>
-#include <Geode/modify/CCSprite.hpp>
 #include <Geode/modify/EffectGameObject.hpp>
 
 using namespace geode::prelude;
 
 const int USER_COIN = 1329;
-const ccColor3B BRONZE_COLOR = ccColor3B{255, 175, 75};
 
-// Replace coin visuals when GameObjects are set up
 class $modify(EffectGameObject) {
-      struct Fields {
-            utils::web::WebTask m_fetchTask;
-            bool m_isSuggested = false;
-            ~Fields() { m_fetchTask.cancel(); }
-      };
+    struct Fields {
+        utils::web::WebTask m_fetchTask;
+        bool m_isSuggested = false;
+        // Clean up task when object is destroyed
+        ~Fields() { m_fetchTask.cancel(); }
+    };
 
-      void customSetup() {
-            EffectGameObject::customSetup();
+    void customSetup() {
+        EffectGameObject::customSetup();
 
-            if (this->m_objectID != USER_COIN) return;
+        if (this->m_objectID != USER_COIN) return;
+        
+        // Prevent applying twice if customSetup runs multiple times
+        if (this->getChildByID("rl-blue-coin-anim")) return;
 
-            // avoid duplicate
-            if (this->getChildByID("rl-blue-coin")) return;
+        auto playLayer = PlayLayer::get();
+        if (!playLayer || !playLayer->m_level || playLayer->m_level->m_levelID == 0) {
+            return;
+        }
 
-            auto playLayer = PlayLayer::get();
-            if (!playLayer || !playLayer->m_level || playLayer->m_level->m_levelID == 0) {
-                  return;
+        int levelId = playLayer->m_level->m_levelID;
+        auto url = fmt::format("https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId);
+        
+        Ref<EffectGameObject> selfRef = this;
+        
+        // Start the web request
+        m_fields->m_fetchTask = web::WebRequest().get(url);
+        
+        // Listen for response
+        m_fields->m_fetchTask.listen([selfRef, levelId](web::WebResponse* res) {
+            if (!selfRef) return;
+
+            if (!res || !res->ok()) {
+                log::debug("GameObjectCoin: fetch failed for level {}", levelId);
+                return; 
             }
 
-            int levelId = playLayer->m_level->m_levelID;
+            auto jsonRes = res->json();
+            if (!jsonRes) return;
 
-            auto url = fmt::format("https://gdrate.arcticwoof.xyz/fetch?levelId={}", levelId);
-            Ref<EffectGameObject> selfRef = this;
-            m_fields->m_fetchTask = web::WebRequest().get(url);
-            auto fields = m_fields;
-            m_fields->m_fetchTask.listen([selfRef, fields, levelId](web::WebResponse* res) {
-                  if (!selfRef) return;
+            auto json = jsonRes.unwrap();
+            // We only really care if the server responds; we can check suggested/rated here
+            // to decide WHICH animation to play, but for now let's apply the Blue Coin.
+            
+            // --- ANIMATION LOGIC STARTS HERE ---
+            
+            // 1. Create the Animation Frame Array
+            auto spriteCache = CCSpriteFrameCache::sharedSpriteFrameCache();
+            auto animFrames = CCArray::create();
 
-                  if (!res || !res->ok()) {
-                        log::debug("GameObjectCoin: fetch failed or non-ok for level {}", levelId);
-                        return;  // don't apply blue coin if server does not respond OK
-                  }
+            // Loop through your 4 images. 
+            // IMPORTANT: Ensure these names match exactly what is in your .plist or file system
+            for (int i = 1; i <= 4; i++) {
+                auto frameName = fmt::format("RL_BlueCoin{}.png", i);
+                auto frame = spriteCache->spriteFrameByName(frameName.c_str());
+                
+                if (frame) {
+                    animFrames->addObject(frame);
+                } else {
+                    log::error("Could not find sprite frame: {}", frameName);
+                    // If you haven't loaded a .plist, you might need to try creating from file:
+                    // animFrames->addObject(CCSprite::create(frameName.c_str())->getDisplayFrame());
+                }
+            }
 
-                  auto jsonRes = res->json();
-                  if (!jsonRes) {
-                        log::debug("GameObjectCoin: invalid JSON response for level {}", levelId);
-                        return;
-                  }
+            // Only proceed if we found frames
+            if (animFrames->count() > 0) {
+                auto animation = CCAnimation::createWithSpriteFrames(animFrames, 0.10f); // 0.10f is the speed per frame
+                auto animate = CCAnimate::create(animation);
+                auto loop = CCRepeatForever::create(animate);
 
-                  auto json = jsonRes.unwrap();
-                  bool isSuggested = json["isSuggested"].asBool().unwrapOrDefault();
-                  auto tag = isSuggested ? 69 : 67;  // idk what to name the tags lol
+                // 2. Find the actual visual node to apply this to.
+                // EffectGameObject is a container. The visual coin is usually a child CCSprite.
+                
+                CCSprite* targetSprite = nullptr;
 
-                  if (auto asSprite = typeinfo_cast<CCSprite*>(selfRef.operator->())) {
-                        asSprite->setTag(tag);
-                        if (!isSuggested) asSprite->setColor({0, 127, 232});
-                  }
-                  if (auto children = selfRef->getChildren()) {
-                        for (auto node : CCArrayExt<CCNode>(children)) {
-                              if (auto cs = typeinfo_cast<CCSprite*>(node)) {
-                                    cs->setTag(tag);
-                                    if (!isSuggested) cs->setColor({0, 127, 232});
-                              }
+                // If the object acts as the sprite itself (sometimes true in GD)
+                if (auto asSprite = typeinfo_cast<CCSprite*>(selfRef.operator->())) {
+                    targetSprite = asSprite;
+                }
+                // Otherwise look for children (Standard for User Coins)
+                else if (auto children = selfRef->getChildren()) {
+                    for (auto node : CCArrayExt<CCNode>(children)) {
+                        if (auto s = typeinfo_cast<CCSprite*>(node)) {
+                            // GD Coins sometimes have a "glow" sprite and a "main" sprite.
+                            // The main sprite usually has a specific Z order or texture.
+                            // We will simply apply it to the first valid Sprite we find that looks like the coin.
+                            targetSprite = s;
+                            break; 
                         }
-                  }
+                    }
+                }
 
-                  // btw this is only just makes the coin blue but still uses the default coin sprite.
-                  // i still dont know how to replace the actual sprite image lmao
+                if (targetSprite) {
+                    // Mark this so we don't do it twice (using ID system)
+                    selfRef->setID("rl-blue-coin-anim");
+                    
+                    // Reset color to white so the blue texture shows correctly
+                    // (If the coin was bronze (tinted), it would turn the blue texture brown-ish)
+                    targetSprite->setColor({255, 255, 255}); 
 
-                  selfRef->m_addToNodeContainer = true;
-            });
-      }
-};
+                    // Set the initial texture to Frame 1 so it changes immediately
+                    auto firstFrame = static_cast<CCSpriteFrame*>(animFrames->objectAtIndex(0));
+                    targetSprite->setDisplayFrame(firstFrame);
 
-class $modify(CCSprite) {
-      void setColor(const ccColor3B& color) {
-            if (color == BRONZE_COLOR) {
-                  int tag = this->getTag();
-                  if (tag == 67) {
-                        CCSprite::setColor({0, 127, 232});
-                        return;
-                  }
-                  if (tag == 69) {
-                        CCSprite::setColor(color);
-                        return;
-                  }
+                    // Run the loop
+                    targetSprite->runAction(loop);
+                }
             }
-
-            CCSprite::setColor(color);
-      }
+            
+            selfRef->m_addToNodeContainer = true;
+        });
+    }
 };
