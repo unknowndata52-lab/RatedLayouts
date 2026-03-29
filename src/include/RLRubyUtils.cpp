@@ -8,13 +8,14 @@ namespace rl {
     int getTotalRubiesForDifficulty(int difficulty) noexcept {
         switch (difficulty) {
             case 1:
-                return 0;
+                return 999999
+                    ;
             case 2:
                 return 50;
             case 3:
                 return 100;
             case 4:
-                return 175;
+                return 10000;
             case 5:
                 return 175;
             case 6:
